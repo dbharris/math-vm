@@ -1,0 +1,86 @@
+#!/bin/sh
+#Installs Mathematica fonts on a Linux or Mac workstation.
+#by Drew Harris
+
+#Defaults
+MAC_XINIT=/usr/X11/lib/X11/xinit  #This is the default for Mac OS 10.6.  If the older xinit is detected, it is used instead.
+LINUX_XINIT=/etc/X11/xinit
+
+MAC_FONT_LOCATION=/usr/X11R6/lib/X11/fonts/mathfonts
+LINUX_FONT_LOCATION=/opt/mathfonts
+
+
+#Execute
+#Check for operating system
+if [ $(uname) == 'Linux' ]
+	then
+		echo "Running Linux install script..."
+		#Check if running as sudo
+		if [ $(whoami) != 'root' ]
+        		then
+                		echo "Please run this command with sudo or as root."
+                		exit
+		fi
+		#If sudo, continue
+
+		mkdir $LINUX_FONT_LOCATION
+		cd $LINUX_FONT_LOCATION
+		wget http://support.wolfram.com/technotes/MathematicaV7FontsLinux.tar.gz
+		tar xfz MathematicaV7FontsLinux.tar.gz
+		xset fp+ $LINUX_FONT_LOCATION/Fonts/Type1
+		xset fp+ $LINUX_FONT_LOCATION/Fonts/BDF
+		xset fp rehash
+
+		#Store in xinitrc
+		bash -c "echo 'xset fp+ $LINUX_FONT_LOCATION/Fonts/Type1' >> $LINUX_XINIT/xinitrc"
+		bash -c "echo 'xset fp+ $LINUX_FONT_LOCATION/Fonts/BDF' >> $LINUX_XINIT/xinitrc"
+		bash -c "echo 'xset fp rehash' >> $LINUX_XINIT/xinitrc"
+
+		#Clean up
+		cd $LINUX_FONT_LOCATION
+		rm MathematicaV7FontsLinux.tar.gz
+
+		echo "Done."
+fi
+
+
+if [ $(uname) == 'Darwin' ]	#if Mac detected
+	then
+		if [ -e /etc/X11/xinit/xinitrc ]	#This will be true on 10.4/10.5
+			then
+				MAC_XINIT=/etc/X11/xinit/xinitrc	#sets the new default
+		fi
+		echo "Running Mac OS X install script..."
+		if [ $(whoami) != 'root' ]	#Check for sudo/root permissions
+			then
+				echo "Please run this command with sudo or as root."
+				exit
+		fi
+		
+		#If sudo, proceed
+		mkdir $MAC_FONT_LOCATION
+		cd $MAC_FONT_LOCATION
+		curl -O http://support.wolfram.com/technotes/MathematicaV7FontsMac.zip
+		unzip MathematicaV7FontsMac.zip
+		/usr/X11R6/bin/mkfontdir Fonts/SVG Fonts/Type1
+		/usr/X11R6/bin/xset fp+ $MAC_FONT_LOCATION/Fonts/Type1
+		/usr/X11R6/bin/xset fp+ $MAC_FONT_LOCATION/Fonts/SVG
+		/usr/X11R6/bin/xset fp rehash
+		
+		#Store in xinitrc
+		# but first make a backup
+		cp $MAC_XINIT/xinitrc $MAC_XINIT/xinitrc.bak
+		bash -c "echo '/usr/X11R6/bin/xset fp+ $MAC_FONT_LOCATION/Fonts/Type1' >> $MAC_XINIT/xinitrc"
+		bash -c "echo '/usr/X11R6/bin/xset fp+ $MAC_FONT_LOCATION/Fonts/SVG' >> $MAC_XINIT/xinitrc"
+		bash -c "echo '/usr/X11R6/bin/xset fp rehash' >> $MAC_XINIT/xinitrc"
+		
+		#Clean up
+		cd $MAC_FONT_LOCATION
+		rm MathematicaV7FontsMac.zip
+		
+		echo "Done."
+fi
+				
+				
+		
+
