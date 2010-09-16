@@ -46,7 +46,7 @@ fi
 
 if [ $(uname) == 'Darwin' ]	#if Mac detected
 	then
-		if [ -e /etc/X11/xinit]		#This will be true on 10.4/10.5
+		if [ -e /etc/X11/xinit/xinitrc]		#This will be true on 10.4/10.5
 			then
 				MAC_XINIT=/etc/X11/xinit	#sets the new default
 		fi
