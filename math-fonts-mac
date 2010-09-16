@@ -20,7 +20,7 @@ mkdir $MATH_FONT_LOCATION
 cd $MATH_FONT_LOCATION
 curl -O http://support.wolfram.com/technotes/MathematicaV7FontsMac.zip
 unzip MathematicaV7FontsMac.zip
-/usr/X11R6/bin/mkfontdir SVG Type1
+/usr/X11R6/bin/mkfontdir Fonts/SVG Fonts/Type1
 /usr/X11R6/bin/xset fp+ $MATH_FONT_LOCATION/Fonts/Type1
 /usr/X11R6/bin/xset fp+ $MATH_FONT_LOCATION/Fonts/SVG
 /usr/X11R6/bin/xset fp rehash
