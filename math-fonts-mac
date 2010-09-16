@@ -10,32 +10,32 @@ MATH_FONT_LOCATION=/usr/X11R6/lib/X11/fonts/mathfonts
 #Execute
 #Check if running as sudo
 whoami='whoami'
-if [ $whoami =! "root"]
+if [ $whoami =! "root" ]
 	then	
 		echo "Please run this command with sudo or as root."
 		exit
 fi
 
 #If sudo, proceed
-sudo mkdir $MATH_FONT_LOCATION
+mkdir $MATH_FONT_LOCATION
 cd $MATH_FONT_LOCATION
-sudo curl -O http://support.wolfram.com/technotes/MathematicaV7FontsMac.zip
-sudo unzip MathematicaV7FontsMac.zip
-sudo /usr/X11R6/bin/mkfontdir SVG Type1
-sudo /usr/X11R6/bin/xset fp+ $MATH_FONT_LOCATION/Fonts/Type1
-sudo /usr/X11R6/bin/xset fp+ $MATH_FONT_LOCATION/Fonts/SVG
-sudo /usr/X11R6/bin/xset fp rehash
+curl -O http://support.wolfram.com/technotes/MathematicaV7FontsMac.zip
+unzip MathematicaV7FontsMac.zip
+/usr/X11R6/bin/mkfontdir SVG Type1
+/usr/X11R6/bin/xset fp+ $MATH_FONT_LOCATION/Fonts/Type1
+/usr/X11R6/bin/xset fp+ $MATH_FONT_LOCATION/Fonts/SVG
+/usr/X11R6/bin/xset fp rehash
 
 #Store in xinitrc
 # but first make a backup
-sudo cp $XINIT_LOCATION/xinitrc $XINIT_LOCATION/xinitrc.bak
-sudo bash -c "echo '/usr/X11R6/bin/xset fp+ $MATH_FONT_LOCATION/Fonts/Type1' >> $XINIT_LOCATION/xinitrc"
-sudo bash -c "echo '/usr/X11R6/bin/xset fp+ $MATH_FONT_LOCATION/Fonts/SVG' >> $XINIT_LOCATION/xinitrc"
-sudo bash -c "echo '/usr/X11R6/bin/xset fp rehash' >> $XINIT_LOCATION/xinitrc"
+cp $XINIT_LOCATION/xinitrc $XINIT_LOCATION/xinitrc.bak
+bash -c "echo '/usr/X11R6/bin/xset fp+ $MATH_FONT_LOCATION/Fonts/Type1' >> $XINIT_LOCATION/xinitrc"
+bash -c "echo '/usr/X11R6/bin/xset fp+ $MATH_FONT_LOCATION/Fonts/SVG' >> $XINIT_LOCATION/xinitrc"
+bash -c "echo '/usr/X11R6/bin/xset fp rehash' >> $XINIT_LOCATION/xinitrc"
 
 #Clean up
 cd $MATH_FONT_LOCATION
-sudo rm MathematicaV7FontsMac.zip
+rm MathematicaV7FontsMac.zip
 
 echo "Done."
 
