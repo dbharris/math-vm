@@ -3,7 +3,6 @@
 #by Drew Harris
 
 #Defaults
-MAC_XINIT=/usr/X11/lib/X11/xinit  #This is the default for Mac OS 10.6.  If the older xinit is detected, it is used instead.
 LINUX_XINIT=/etc/X11/xinit
 
 MAC_FONT_LOCATION=/usr/X11/lib/X11/fonts/mathfonts
@@ -46,10 +45,6 @@ fi
 
 if [ $(uname) == 'Darwin' ]	#if Mac detected
 	then
-		if [ -e /etc/X11/xinit/xinitrc ]		#This will be true on 10.4/10.5
-			then
-				MAC_XINIT=/etc/X11/xinit	#sets the new default
-		fi
 		echo "Running Mac OS X install script..."
 		if [ $(whoami) != 'root' ]	#Check for sudo/root permissions
 			then
@@ -72,7 +67,7 @@ if [ $(uname) == 'Darwin' ]	#if Mac detected
 		#Store in a script that is executed on X11 startup
 		mkdir ~/.xinitrc.d
 		bash -c "echo '/usr/X11R6/bin/xset +fp $MAC_FONT_LOCATION/Type1' >> ~/.xinitrc.d/mathfonts.sh"
-		bash -c "echo '/usr/X11R6/bin/xset +fp $MAC_FONT_LOCATION/SVG' >> ~/.xinitrc.d/mathfonts.sh"
+		bash -c "echo '/usr/X11R6/bin/xset +fp $MAC_FONT_LOCATION/BDF' >> ~/.xinitrc.d/mathfonts.sh"
 		bash -c "echo '/usr/X11R6/bin/xset fp rehash' >> ~/.xinitrc.d/mathfonts.sh"
 		chmod 777 ~/.xinitrc.d/mathfonts.sh
 		#Clean up
