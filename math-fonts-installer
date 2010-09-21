@@ -6,7 +6,7 @@
 MAC_XINIT=/usr/X11/lib/X11/xinit  #This is the default for Mac OS 10.6.  If the older xinit is detected, it is used instead.
 LINUX_XINIT=/etc/X11/xinit
 
-MAC_FONT_LOCATION=/usr/X11R6/lib/X11/fonts/mathfonts
+MAC_FONT_LOCATION=/usr/X11/lib/X11/fonts/mathfonts
 LINUX_FONT_LOCATION=/opt/mathfonts
 
 
@@ -60,23 +60,24 @@ if [ $(uname) == 'Darwin' ]	#if Mac detected
 		#If sudo, proceed
 		mkdir $MAC_FONT_LOCATION
 		cd $MAC_FONT_LOCATION
-		curl -O http://support.wolfram.com/technotes/MathematicaV7FontsMac.zip
-		unzip MathematicaV7FontsMac.zip
-		/usr/X11R6/bin/mkfontdir Fonts/SVG Fonts/Type1
-		/usr/X11R6/bin/xset fp+ $MAC_FONT_LOCATION/Fonts/Type1
-		/usr/X11R6/bin/xset fp+ $MAC_FONT_LOCATION/Fonts/SVG
+		curl -O http://support.wolfram.com/technotes/MathematicaV7FontsLinux.tar.gz
+		tar xfz MathematicaV7FontsLinux.tar.gz
+		mv Fonts/* ./
+		rm -R Fonts/
+		mkfontdir Type1/ BDF/
+		/usr/X11R6/bin/xset +fp $MAC_FONT_LOCATION/Type1
+		/usr/X11R6/bin/xset +fp $MAC_FONT_LOCATION/BDF
 		/usr/X11R6/bin/xset fp rehash
 		
-		#Store in xinitrc
-		# but first make a backup
-		cp $MAC_XINIT/xinitrc $MAC_XINIT/xinitrc.bak
-		bash -c "echo '/usr/X11R6/bin/xset fp+ $MAC_FONT_LOCATION/Fonts/Type1' >> $MAC_XINIT/xinitrc"
-		bash -c "echo '/usr/X11R6/bin/xset fp+ $MAC_FONT_LOCATION/Fonts/SVG' >> $MAC_XINIT/xinitrc"
-		bash -c "echo '/usr/X11R6/bin/xset fp rehash' >> $MAC_XINIT/xinitrc"
-		
+		#Store in a script that is executed on X11 startup
+		mkdir ~/.xinitrc.d
+		bash -c "echo '/usr/X11R6/bin/xset +fp $MAC_FONT_LOCATION/Fonts/Type1' >> ~/.xinitrc.d/mathfonts.sh"
+		bash -c "echo '/usr/X11R6/bin/xset +fp $MAC_FONT_LOCATION/Fonts/SVG' >> ~/.xinitrc.d/mathfonts.sh"
+		bash -c "echo '/usr/X11R6/bin/xset fp rehash' >> ~/.xinitrc.d/mathfonts.sh"
+		chmod u+x ~/.xinitrc.d/mathfonts.sh
 		#Clean up
-		cd $MAC_FONT_LOCATION
-		rm MathematicaV7FontsMac.zip
+		#cd $MAC_FONT_LOCATION
+		#rm MathematicaV7FontsLinux.tar.gz
 		
 		echo "Done."
 fi
