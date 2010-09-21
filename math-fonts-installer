@@ -1,36 +1,37 @@
-#!/bin/sh
-#Installs Mathematica fonts on a Linux or Mac workstation.
+#!/bin/bash
+#Installs Mathematica 7 fonts on a Linux or Mac workstation.
 #by Drew Harris
 
 #Defaults
 LINUX_XINIT=/etc/X11/xinit
-
-MAC_FONT_LOCATION=/usr/X11/lib/X11/fonts/mathfonts
 LINUX_FONT_LOCATION=/opt/mathfonts
+MAC_FONT_LOCATION=/usr/X11/lib/X11/fonts/mathfonts
+
 
 
 #Execute
 #Check for operating system
-if [ $(uname) == 'Linux' ]
+if [ $(uname) == 'Linux' ]	#if Linux detected
 	then
 		echo "Running Linux install script..."
-		#Check if running as sudo
-		if [ $(whoami) != 'root' ]
+		if [ $(whoami) != 'root' ]	#Check for sudo/root permissions
         		then
                 		echo "Please run this command with sudo or as root."
                 		exit
 		fi
-		#If sudo, continue
-
+		
+		#If sudo, proceed.
 		mkdir $LINUX_FONT_LOCATION
 		cd $LINUX_FONT_LOCATION
+		#Download fonts from Wolfram
 		wget http://support.wolfram.com/technotes/MathematicaV7FontsLinux.tar.gz
 		tar xfz MathematicaV7FontsLinux.tar.gz
+		#Add the fonts to the current X session.
 		xset fp+ $LINUX_FONT_LOCATION/Fonts/Type1
 		xset fp+ $LINUX_FONT_LOCATION/Fonts/BDF
 		xset fp rehash
 
-		#Store in xinitrc
+		#Store in xinitrc so the fonts are loaded on startup.
 		bash -c "echo 'xset fp+ $LINUX_FONT_LOCATION/Fonts/Type1' >> $LINUX_XINIT/xinitrc"
 		bash -c "echo 'xset fp+ $LINUX_FONT_LOCATION/Fonts/BDF' >> $LINUX_XINIT/xinitrc"
 		bash -c "echo 'xset fp rehash' >> $LINUX_XINIT/xinitrc"
@@ -53,26 +54,34 @@ if [ $(uname) == 'Darwin' ]	#if Mac detected
 		fi
 		
 		#If sudo, proceed
-		mkdir $MAC_FONT_LOCATION
+		if [ ! -d $MAC_FONT_LOCATION ]
+			then
+				mkdir $MAC_FONT_LOCATION
+		fi
 		cd $MAC_FONT_LOCATION
 		curl -O http://support.wolfram.com/technotes/MathematicaV7FontsLinux.tar.gz
 		tar xfz MathematicaV7FontsLinux.tar.gz
 		mv Fonts/* ./
 		rm -R Fonts/
 		mkfontdir Type1/ BDF/
-		/usr/X11R6/bin/xset +fp $MAC_FONT_LOCATION/Type1
 		/usr/X11R6/bin/xset +fp $MAC_FONT_LOCATION/BDF
+		/usr/X11R6/bin/xset +fp $MAC_FONT_LOCATION/Type1
 		/usr/X11R6/bin/xset fp rehash
 		
 		#Store in a script that is executed on X11 startup
-		mkdir ~/.xinitrc.d
+		if [ ! -d '~/.xinitrc.d' ]
+			then
+				mkdir ~/.xinitrc.d
+		fi
+		
 		bash -c "echo '/usr/X11R6/bin/xset +fp $MAC_FONT_LOCATION/Type1' >> ~/.xinitrc.d/mathfonts.sh"
 		bash -c "echo '/usr/X11R6/bin/xset +fp $MAC_FONT_LOCATION/BDF' >> ~/.xinitrc.d/mathfonts.sh"
 		bash -c "echo '/usr/X11R6/bin/xset fp rehash' >> ~/.xinitrc.d/mathfonts.sh"
+		#Make it executable.
 		chmod 777 ~/.xinitrc.d/mathfonts.sh
 		#Clean up
-		#cd $MAC_FONT_LOCATION
-		#rm MathematicaV7FontsLinux.tar.gz
+		cd $MAC_FONT_LOCATION
+		rm MathematicaV7FontsLinux.tar.gz
 		
 		echo "Done."
 fi
