@@ -71,10 +71,10 @@ if [ $(uname) == 'Darwin' ]	#if Mac detected
 		
 		#Store in a script that is executed on X11 startup
 		mkdir ~/.xinitrc.d
-		bash -c "echo '/usr/X11R6/bin/xset +fp $MAC_FONT_LOCATION/Fonts/Type1' >> ~/.xinitrc.d/mathfonts.sh"
-		bash -c "echo '/usr/X11R6/bin/xset +fp $MAC_FONT_LOCATION/Fonts/SVG' >> ~/.xinitrc.d/mathfonts.sh"
+		bash -c "echo '/usr/X11R6/bin/xset +fp $MAC_FONT_LOCATION/Type1' >> ~/.xinitrc.d/mathfonts.sh"
+		bash -c "echo '/usr/X11R6/bin/xset +fp $MAC_FONT_LOCATION/SVG' >> ~/.xinitrc.d/mathfonts.sh"
 		bash -c "echo '/usr/X11R6/bin/xset fp rehash' >> ~/.xinitrc.d/mathfonts.sh"
-		chmod u+x ~/.xinitrc.d/mathfonts.sh
+		chmod 777 ~/.xinitrc.d/mathfonts.sh
 		#Clean up
 		#cd $MAC_FONT_LOCATION
 		#rm MathematicaV7FontsLinux.tar.gz
