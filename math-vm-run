@@ -16,7 +16,7 @@ EPRFILE=./nimbus.${DATESTAMP}.epr
 export GLOBUS_LOCATION=/opt/nimbus-service/nimbus-cloud-client/lib/globus
 #export GLOBUS_LOCATION=/opt/nimbus-service/services
 USAGE="Usage:
-`basename $0` [-i|--image http://host/imagename.img.gz] [-s|--sshpub path/to/sshpubkey] [-n|--network private|public] [-c|--cloud hostname.of.cloud.cluster] [-r|--ram raminmb] [-h|--help]"
+`basename $0` [-i|--image http://host/imagename.img.gz] [-s|--sshpub path/to/sshpubkey] [-n|--network private|public] [-c|--cloud hostname.of.cloud.cluster] [-r|--ram raminmb] [-u|--user remote-username] [-h|--help]"
 
 # Parse command line arguments
 while [ "$1" != "" ]; do
@@ -36,6 +36,9 @@ while [ "$1" != "" ]; do
         -c | --cloud )          shift
                                 cloud=$1
                                 ;;
+	-u | --user )		shift
+				user=$1
+				;;
         -h | --help )           echo $USAGE
                                 exit
                                 ;;
@@ -50,6 +53,7 @@ done
 [ "$ram" ] || ram=$DEFAULTRAM
 [ "$image" ] || image=$DEFAULTIMAGE
 [ "$network" ] || network=$DEFAULTNETWORK
+[ "$user" ] || user=mathuser
 
 # Prepare ssh pub key
 if [ ${sshpub} ]; then
@@ -107,7 +111,7 @@ CUSTXML="<?xml version=\"1.0\" encoding=\"UTF-8\"?>
 <OptionalParameters>
     <filewrite>
         <content>$ID_RSA</content>
-        <pathOnVM>/home/mathuser/.ssh/authorized_keys</pathOnVM>
+        <pathOnVM>/home/$user/.ssh/authorized_keys</pathOnVM>
     </filewrite>
 </OptionalParameters>"
 
