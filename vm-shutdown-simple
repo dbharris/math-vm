@@ -1,0 +1,46 @@
+#!/bin/sh
+# Script to utilize workspace.sh to destory a running VM based on an .epr file
+# Version 0.1
+# written by dbharris
+
+# Defaults
+NIMBUS_SERVICE_DIR=/opt/nimbus-service
+
+# Export
+export GLOBUS_LOCATION=/opt/nimbus-service/services
+export X509_CERT_DIR=/opt/nimbus-service/var/ca/trusted-certs/
+# Execute
+echo " "
+echo "VM Simple Shutdown Script v0.1.  Run this script in the same directory as vm-run-simple."
+echo "Displaying current .epr files"
+echo " "
+ls | grep ".epr" | cat
+echo " "
+echo "Enter the .epr file you'd like to shutdown (probably the largest number)"
+read eprFile
+EPOCHTIME=$(echo $eprFile | cut -d'.' -f2)
+echo "The timestamp associated with this eprFile is " ; date -d "@$EPOCHTIME"
+echo " "
+echo "Are you sure you want to shutdown this VM? (y/n)"
+read shutdown
+if [ $shutdown == y ]
+	then
+		echo "Now shutting down $eprFile..."
+		$GLOBUS_LOCATION/bin/workspace --shutdown --eprFile ./$eprFile
+	else
+		echo "Exiting..."
+		exit
+fi
+
+
+#echo "Would you like to delete the eprFile? (y/n)"
+#read delete
+
+#if [ $delete == y ]
+#	then
+#		rm ./$eprFile
+#		echo "File deleted."
+#fi
+
+echo "done"
+
