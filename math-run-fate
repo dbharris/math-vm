@@ -1,0 +1,143 @@
+#!/bin/sh
+# run-math-vm - create a Mathematica VM from the command line
+
+#CONFIGURABLE DEFAULTS
+DEFAULTCLOUD=elephant.heprc.uvic.ca
+DEFAULTNETWORK=public
+DEFAULTRAM=1024
+DEFAULTIMAGE='http://vmrepo.heprc.uvic.ca/Mathematica-VM-0.4.img'
+DURATION=240
+
+SCRIPT=`basename $0`
+DATESTAMP=`date +%s`
+NIMBUSFILE=/tmp/nimbus.${DATESTAMP}.xml
+CUSTFILE=/tmp/nimbus.optional.xml
+EPRFILE=./nimbus.${DATESTAMP}.epr
+#for Fate:
+export GLOBUS_LOCATION=/usr/local/nimbus/ws-core
+export X509_CERT_DIR=/etc/grid-security/certificates
+#export GLOBUS_LOCATION=/opt/nimbus-service/nimbus-cloud-client/lib/globus
+#export GLOBUS_LOCATION=/opt/nimbus-service/services
+USAGE="Usage:
+`basename $0` [-i|--image http://host/imagename.img.gz] [-s|--sshpub path/to/sshpubkey] [-n|--network private|public] [-c|--cloud hostname.of.cloud.cluster] [-r|--ram raminmb] [-u|--user remote-username] [-h|--help]"
+
+# Parse command line arguments
+while [ "$1" != "" ]; do
+    case $1 in
+        -i | --image )          shift
+                                image=$1
+                                ;;
+        -s | --sshpub )         shift
+                                sshpub=$1
+                                ;;
+        -n | --network )        shift
+                                network=$1
+                                ;;
+        -r | --ram )            shift
+                                ram=$1
+                                ;;
+        -c | --cloud )          shift
+                                cloud=$1
+                                ;;
+	-u | --user )		shift
+				user=$1
+				;;
+        -h | --help )           echo $USAGE
+                                exit
+                                ;;
+        * )                     echo $USAGE
+                                exit 1
+    esac
+    shift
+done
+
+# Set defaults
+[ "$cloud" ] || cloud=$DEFAULTCLOUD
+[ "$ram" ] || ram=$DEFAULTRAM
+[ "$image" ] || image=$DEFAULTIMAGE
+[ "$network" ] || network=$DEFAULTNETWORK
+[ "$user" ] || user=mathuser
+
+# Prepare ssh pub key
+if [ ${sshpub} ]; then
+    sshpub="--sshfile ${sshpub}"
+fi
+
+# Grab id_rsa.pub
+ID_RSA=$(cat ~/.ssh/id_rsa.pub)
+
+# Write XML File
+
+NIMBUSXML="<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+<VirtualWorkspace
+    xmlns=\"http://www.globus.org/2008/06/workspace/metadata\"
+    xmlns:def=\"http://www.globus.org/2008/06/workspace/metadata/definition\"
+    xmlns:log=\"http://www.globus.org/2008/06/workspace/metadata/logistics\"
+    xmlns:jsdl=\"http://schemas.ggf.org/jsdl/2005/11/jsdl\"
+    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" >
+
+    <name>http://${cloud}/`basename ${image}`</name>
+
+    <log:logistics>
+        <log:networking>
+            <log:nic>
+                <log:name>eth0</log:name>
+                <log:ipConfig>
+                    <log:acquisitionMethod>AllocateAndConfigure</log:acquisitionMethod>
+                </log:ipConfig>
+                <log:association>${network}</log:association>
+            </log:nic>
+        </log:networking>
+    </log:logistics>
+
+    <def:definition>
+        <def:requirements>
+            <jsdl:CPUArchitecture>
+                <jsdl:CPUArchitectureName>x86</jsdl:CPUArchitectureName>
+            </jsdl:CPUArchitecture>
+            <def:VMM>
+                <def:type>Xen</def:type>
+                <def:version>3</def:version>
+            </def:VMM>
+        </def:requirements>
+        <def:diskCollection>
+            <def:rootVBD>
+                <def:location>${image}</def:location>
+                <def:mountAs>sda</def:mountAs>
+                <def:permissions>ReadWrite</def:permissions>
+            </def:rootVBD>
+        </def:diskCollection>
+    </def:definition>
+</VirtualWorkspace>"
+
+CUSTXML="<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+<OptionalParameters>
+    <filewrite>
+        <content>$ID_RSA</content>
+        <pathOnVM>/home/$user/.ssh/authorized_keys</pathOnVM>
+    </filewrite>
+</OptionalParameters>"
+
+
+echo "${NIMBUSXML}" > ${NIMBUSFILE}
+echo "${CUSTXML}" > ${CUSTFILE}
+
+#Make sure user has a grid proxy certificate
+$GLOBUS_LOCATION/bin/grid-proxy-init
+
+#Boot machine
+$GLOBUS_LOCATION/bin/workspace \
+    -z host \
+    --poll-delay 200 \
+    --deploy \
+    --file ${EPRFILE} \
+    -o ${CUSTFILE} \
+    --metadata ${NIMBUSFILE} \
+    -s https://${cloud}:8443/wsrf/services/WorkspaceFactoryService \
+    --deploy-duration 400 \
+    --deploy-mem ${ram} \
+    --deploy-state Running \
+    --trash-at-shutdown \
+    --exit-state Running \
+    ${sshpub}
+rm ${NIMBUSFILE}
