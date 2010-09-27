@@ -9,16 +9,42 @@
 
 # Defaults
 CLOUD_CLIENT=/opt/nimbus-service/nimbus-cloud-client/
-INSTALL_DIRECTORY=/opt/math-vm
+INSTALL_DIRECTORY=/tmp/math-vm
+SCRIPT=`basename $0`
+USAGE="Usage:
+`basename $0` [-s3id s3-id-here] [-s3key s3-key-here] [-c canonical-id-here]"
 
 echo "Mathematica Virtual Machine Bootstrap Script."
 echo " "
-if [ $(whoami) != 'root' ]	#Check for sudo/root permissions
-        then
-                echo "Please run this command with sudo or as root."
-                exit
-fi
-cd /opt
+#if [ $(whoami) != 'root' ]	#Check for sudo/root permissions
+#        then
+#                echo "Please run this command with sudo or as root."
+#                exit
+#fi
+
+
+# Parse command line arguments
+while [ "$1" != "" ]; do
+    case $1 in
+        -s3id )          shift
+                                S3ID=$1
+                                ;;
+        -s3key )         shift
+                                S3KEY=$1
+                                ;;
+        -c )       	 shift
+                                CANONICALID=$1
+                                ;;
+        -h | --help )           echo $USAGE
+                                exit
+                                ;;
+        * )                     echo $USAGE
+                                exit 1
+    esac
+    shift
+done
+
+
 if [ ! -d $INSTALL_DIRECTORY ]
 	then
 		mkdir $INSTALL_DIRECTORY
@@ -34,14 +60,14 @@ fi
 
 
 # Grab cloud credentials.
-echo "Enter your S3id"
-read S3ID
+#echo "Enter your S3id"
+#read S3ID
 
-echo "Enter your s3key"
-read S3KEY
+#echo "Enter your s3key"
+#read S3KEY
 
-echo "Enter your canonicalid"
-read CANONICALID
+#echo "Enter your canonicalid"
+#read CANONICALID
 
 CREDENTIALS="###########################################################################
 # Your image repository credentials
@@ -144,7 +170,7 @@ HANDLE=$(cat runlog.txt  | grep Running: | sed s/"'"/" "/g | awk '{print $2}')
 echo "Enter the new remote username:"
 read $USERNAME
 
-ssh root@$HOSTNAME /usr/sbin/adduser $USERNAME
+ssh root@$IP_ADDRESS /usr/sbin/adduser $USERNAME
 #will ask for the new user's password
 
 # Shutdown-save the virtual machine
@@ -238,7 +264,7 @@ IP_ADDRESS=$(cat runlog.txt  | grep IP | awk '{print $3}')
 HANDLE=$(cat runlog.txt  | grep Running: | sed s/"'"/" "/g | awk '{print $2}')
 
 # Test SSH login
-ssh $USERNAME@$HOSTNAME echo "SSH access to the VM is functional."
+ssh $USERNAME@$IP_ADDRESS echo "SSH access to the VM is functional."
 
 # Shutdown the bootstapped VM
 $CLOUD_CLIENT/bin/cloud-client.sh --conf ./cloud.properties --terminate --handle $HANDLE
