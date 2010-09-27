@@ -1,0 +1,256 @@
+#!/bin/bash
+# Mathematica Virtualization Bootstrap Script 0.1
+# Logic:
+# Download image through HTTP.  Run with cloud client, injecting public-key for root access
+# Use cloud client with template 1, *with cloud credentials*
+# SSH into the VM using the public key.
+# Create a user account, using keyboard input for the username and password.
+# Save VM back to Cumulus.
+
+# Defaults
+CLOUD_CLIENT=/opt/nimbus-service/nimbus-cloud-client/
+INSTALL_DIRECTORY=/opt/math-vm
+
+echo "Mathematica Virtual Machine Bootstrap Script."
+echo " "
+if [ $(whoami) != 'root' ]	#Check for sudo/root permissions
+        then
+                echo "Please run this command with sudo or as root."
+                exit
+fi
+cd /opt
+if [ ! -d $INSTALL_DIRECTORY ]
+	then
+		mkdir $INSTALL_DIRECTORY
+		cd $INSTALL_DIRECTORY
+		
+else
+	echo "$INSTALL_DIRECTORY already exists. Please specify an alternate location."
+	read ALT_INSTALL
+	mkdir $ALT_INSTALL
+	cd $ALT_INSTALL
+fi
+
+
+
+# Grab cloud credentials.
+echo "Enter your S3id"
+read S3ID
+
+echo "Enter your s3key"
+read S3KEY
+
+echo "Enter your canonicalid"
+read CANONICALID
+
+CREDENTIALS="###########################################################################
+# Your image repository credentials
+###########################################################################
+
+vws.repository.s3id=${S3ID}
+vws.repository.s3key=${S3KEY}
+vws.repository.canonicalid=${CANONICALID}"
+
+
+CLOUD_PROPERTIES="###########################################################################
+# Path to SSH public key to log in with.
+#
+# If left blank or deleted, the client will proceed calling the service
+# without an SSH just-in-time configuration request. You can override
+# using the --ssh-pubkey flag.
+###########################################################################
+
+ssh.pubkey=~/.ssh/id_rsa.pub
+
+
+###########################################################################
+# Path to SSH known_hosts file
+#
+# If a remote host's SSH public key is made available, the presence of
+# this configuration signals the cloud client to replace the corresponding
+# IP and/or hostname entry in the SSH known_hosts file.
+#
+# Only used when you invoke --cluster and use contextualization
+#
+# You can disable this behavior by leaving blank or deleting.
+###########################################################################
+
+ssh.hostsfile=~/.ssh/known_hosts
+
+
+###########################################################################
+# Host+port of the Nimbus central service (not the URL)
+###########################################################################
+
+vws.factory=elephant.heprc.uvic.ca:8443
+
+
+###########################################################################
+# Default settings for this Nimbus cloud
+###########################################################################
+
+vws.memory.request=256
+vws.cores.request=1
+
+
+###########################################################################
+# Host+port of image repository (not the URL)
+###########################################################################
+
+vws.repository=elephant.heprc.uvic.ca:8888
+
+
+###########################################################################
+# Virtal Workspace Service identity, to verify we are talking to the
+# right machine.
+###########################################################################
+
+vws.factory.identity=/C=CA/O=Grid/CN=host/elephant.heprc.uvic.ca
+
+
+###########################################################################
+# Image repository settings
+###########################################################################
+
+vws.repository.type=cumulus
+vws.repository.s3basekey=VMS
+vws.repository.s3bucket=Repo
+vws.repository.s3https=false
+vws.repository.s3acceptallcerts=false
+
+
+${CREDENTIALS}
+
+# Extra stuff
+vws.metadata.mountAs=sda"
+
+
+
+echo "${CLOUD_PROPERTIES}" > cloud.properties
+
+# Download the stock image
+wget http://vmrepo.heprc.uvic.ca/Mathematica-VM-0.4.img
+
+# Load the image into the user's personal repository in Cumulus
+$CLOUD_CLIENT/bin/cloud-client.sh --conf ./cloud.properties --transfer --sourcefile ./Mathematica-VM-0.4.img
+
+# Launch vm.
+$CLOUD_CLIENT/bin/cloud-client.sh --conf ./cloud.properties --run --name Mathematica-VM-0.4.img --hours 1 > runlog.txt
+
+# Parse output of cloud-client to grab the IP address
+IP_ADDRESS=$(cat runlog.txt  | grep IP | awk '{print $3}')
+HANDLE=$(cat runlog.txt  | grep Running: | sed s/"'"/" "/g | awk '{print $2}')
+
+echo "Enter the new remote username:"
+read $USERNAME
+
+ssh root@$HOSTNAME /usr/sbin/adduser $USERNAME
+#will ask for the new user's password
+
+# Shutdown-save the virtual machine
+$CLOUD_CLIENT/bin/cloud-client.sh --conf ./cloud.properties --save --handle $HANDLE
+
+# Remove old cloud.properties, write new one without root RSA key
+rm cloud.properties
+
+# Write new cloud.properties
+
+CLOUD_PROPERTIES="###########################################################################
+# Path to SSH public key to log in with.
+#
+# If left blank or deleted, the client will proceed calling the service
+# without an SSH just-in-time configuration request. You can override
+# using the --ssh-pubkey flag.
+###########################################################################
+
+#ssh.pubkey=~/.ssh/id_rsa.pub
+
+
+###########################################################################
+# Path to SSH known_hosts file
+#
+# If a remote host's SSH public key is made available, the presence of
+# this configuration signals the cloud client to replace the corresponding
+# IP and/or hostname entry in the SSH known_hosts file.
+#
+# Only used when you invoke --cluster and use contextualization
+#
+# You can disable this behavior by leaving blank or deleting.
+###########################################################################
+
+ssh.hostsfile=~/.ssh/known_hosts
+
+
+###########################################################################
+# Host+port of the Nimbus central service (not the URL)
+###########################################################################
+
+vws.factory=elephant.heprc.uvic.ca:8443
+
+
+###########################################################################
+# Default settings for this Nimbus cloud
+###########################################################################
+
+vws.memory.request=256
+vws.cores.request=1
+
+
+###########################################################################
+# Host+port of image repository (not the URL)
+###########################################################################
+
+vws.repository=elephant.heprc.uvic.ca:8888
+
+
+###########################################################################
+# Virtal Workspace Service identity, to verify we are talking to the
+# right machine.
+###########################################################################
+
+vws.factory.identity=/C=CA/O=Grid/CN=host/elephant.heprc.uvic.ca
+
+
+###########################################################################
+# Image repository settings
+###########################################################################
+
+vws.repository.type=cumulus
+vws.repository.s3basekey=VMS
+vws.repository.s3bucket=Repo
+vws.repository.s3https=false
+vws.repository.s3acceptallcerts=false
+
+
+${CREDENTIALS}
+
+# Extra stuff
+vws.metadata.mountAs=sda"
+
+echo "${CLOUD_PROPERTIES}" > cloud.properties
+#cp cloud.properties $CLOUD_CLIENT/conf/cloud.properties
+
+# Launch VM again
+$CLOUD_CLIENT/bin/cloud-client.sh --conf ./cloud.properties --run --name Mathematica-VM-0.4.img --hours 1 > runlog.txt
+
+# Parse output of cloud-client to grab the IP address
+IP_ADDRESS=$(cat runlog.txt  | grep IP | awk '{print $3}')
+HANDLE=$(cat runlog.txt  | grep Running: | sed s/"'"/" "/g | awk '{print $2}')
+
+# Test SSH login
+ssh $USERNAME@$HOSTNAME echo "SSH access to the VM is functional."
+
+# Shutdown the bootstapped VM
+$CLOUD_CLIENT/bin/cloud-client.sh --conf ./cloud.properties --terminate --handle $HANDLE
+
+
+echo "Done."
+
+
+
+
+
+
+
+
+
