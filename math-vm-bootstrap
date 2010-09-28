@@ -10,9 +10,6 @@
 # Defaults
 CLOUD_CLIENT=/opt/nimbus-service/nimbus-cloud-client/
 INSTALL_DIRECTORY=/tmp/math-vm
-SCRIPT=`basename $0`
-USAGE="Usage:
-`basename $0` [-s3id s3-id-here] [-s3key s3-key-here] [-c canonical-id-here] [-u|--user username]"
 
 echo "Mathematica Virtual Machine Bootstrap Script."
 echo " "
@@ -22,30 +19,6 @@ echo " "
 #                exit
 #fi
 
-
-# Parse command line arguments
-while [ "$1" != "" ]; do
-    case $1 in
-        -s3id )          shift
-                                S3ID=$1
-                                ;;
-        -s3key )         shift
-                                S3KEY=$1
-                                ;;
-	-u | --user)     shift
-                                REMOTE_USER=$1
-                                ;;
-        -c )       	 shift
-                                CANONICALID=$1
-                                ;;
-        -h | --help )           echo $USAGE
-                                exit
-                                ;;
-        * )                     echo $USAGE
-                                exit 1
-    esac
-    shift
-done
 
 
 if [ ! -d $INSTALL_DIRECTORY ]
