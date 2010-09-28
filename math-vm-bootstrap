@@ -33,7 +33,7 @@ while [ "$1" != "" ]; do
                                 S3KEY=$1
                                 ;;
 	-u | --user)     shift
-                                USERNAME=$1
+                                REMOTE_USER=$1
                                 ;;
         -c )       	 shift
                                 CANONICALID=$1
@@ -63,14 +63,32 @@ fi
 
 
 # Grab cloud credentials.
-#echo "Enter your S3id"
-#read S3ID
+echo "Enter your repository S3id"
+read S3ID
 
-#echo "Enter your s3key"
-#read S3KEY
+echo "Enter your repository s3key"
+read S3KEY
 
-#echo "Enter your canonicalid"
-#read CANONICALID
+echo "Enter your repository canonicalid"
+read CANONICALID
+
+echo "Enter the new remote username:"
+read REMOTE_USER
+
+stty -echo
+while printf "Enter the remote user's password: "; do
+        read USER_PASSWORD && echo -e "\n"
+        printf "Please re-enter the password: "
+        read USER_PASSWORD2 && echo -e "\n"
+if [ "$USER_PASSWORD" = "$USER_PASSWORD2" ]; then
+        break
+else
+        echo -e "Passwords do not match. Please try again."
+fi
+done
+stty echo
+
+
 
 CREDENTIALS="###########################################################################
 # Your image repository credentials
@@ -158,23 +176,26 @@ vws.metadata.mountAs=sda"
 echo "${CLOUD_PROPERTIES}" > cloud.properties
 
 # Download the stock image
-wget http://vmrepo.heprc.uvic.ca/Mathematica-VM-0.4.img
+#wget http://vmrepo.heprc.uvic.ca/Mathematica-VM-0.4.img
 
 # Load the image into the user's personal repository in Cumulus
-$CLOUD_CLIENT/bin/cloud-client.sh --conf ./cloud.properties --transfer --sourcefile ./Mathematica-VM-0.4.img
+#$CLOUD_CLIENT/bin/cloud-client.sh --conf ./cloud.properties --transfer --sourcefile ./Mathematica-VM-0.4.img
 
 # Launch vm.
-$CLOUD_CLIENT/bin/cloud-client.sh --conf ./cloud.properties --run --name Mathematica-VM-0.4.img --hours 1 > runlog.txt
+$CLOUD_CLIENT/bin/cloud-client.sh --conf ./cloud.properties --run --name Mathematica-VM-0.4.img --hours 1 2>&1 | tee runlog.txt
 
 # Parse output of cloud-client to grab the IP address
 IP_ADDRESS=$(cat runlog.txt  | grep IP | awk '{print $3}')
 HANDLE=$(cat runlog.txt  | grep Running: | sed s/"'"/" "/g | awk '{print $2}')
 
-echo "Enter the new remote username:"
-read $USERNAME
 
-ssh root@$IP_ADDRESS /usr/sbin/adduser $USERNAME
-#will ask for the new user's password
+echo "Adding $REMOTE_USER..."
+ssh root@$IP_ADDRESS /usr/sbin/adduser $REMOTE_USER
+ssh root@$IP_ADDRESS passwd $REMOTE_USER<<EOF
+$USER_PASSWORD
+$USER_PASSWORD
+EOF
+
 
 # Shutdown-save the virtual machine
 $CLOUD_CLIENT/bin/cloud-client.sh --conf ./cloud.properties --save --handle $HANDLE
@@ -260,14 +281,17 @@ echo "${CLOUD_PROPERTIES}" > cloud.properties
 #cp cloud.properties $CLOUD_CLIENT/conf/cloud.properties
 
 # Launch VM again
-$CLOUD_CLIENT/bin/cloud-client.sh --conf ./cloud.properties --run --name Mathematica-VM-0.4.img --hours 1 > runlog.txt
+$CLOUD_CLIENT/bin/cloud-client.sh --conf ./cloud.properties --run --name Mathematica-VM-0.4.img --hours 1 2>&1 | tee runlog.txt
 
 # Parse output of cloud-client to grab the IP address
 IP_ADDRESS=$(cat runlog.txt  | grep IP | awk '{print $3}')
 HANDLE=$(cat runlog.txt  | grep Running: | sed s/"'"/" "/g | awk '{print $2}')
 
 # Test SSH login
-ssh $USERNAME@$IP_ADDRESS echo "SSH access to the VM is functional."
+ssh $REMOTE_USER@$IP_ADDRESS echo "SSH access to the VM is functional."<<EOF
+$USER_PASSWORD
+EOF
+
 
 # Shutdown the bootstapped VM
 $CLOUD_CLIENT/bin/cloud-client.sh --conf ./cloud.properties --terminate --handle $HANDLE
