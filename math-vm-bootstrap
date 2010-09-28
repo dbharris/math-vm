@@ -61,7 +61,7 @@ fi
 done
 stty echo
 
-
+ssh-keygen -N "" -f /tmp/id_rsa
 
 CREDENTIALS="###########################################################################
 # Your image repository credentials
@@ -80,7 +80,7 @@ CLOUD_PROPERTIES="##############################################################
 # using the --ssh-pubkey flag.
 ###########################################################################
 
-ssh.pubkey=~/.ssh/id_rsa.pub
+ssh.pubkey=/tmp/id_rsa.pub
 
 
 ###########################################################################
@@ -149,22 +149,22 @@ vws.metadata.mountAs=sda"
 echo "${CLOUD_PROPERTIES}" > cloud.properties
 
 # Download the stock image
-#wget http://vmrepo.heprc.uvic.ca/Mathematica-VM-0.4.img
+wget http://vmrepo.heprc.uvic.ca/Mathematica-VM.img.gz
 
 # Load the image into the user's personal repository in Cumulus
-#$CLOUD_CLIENT/bin/cloud-client.sh --conf ./cloud.properties --transfer --sourcefile ./Mathematica-VM-0.4.img
+$CLOUD_CLIENT/bin/cloud-client.sh --conf ./cloud.properties --transfer --sourcefile ./Mathematica-VM.img.gz
 
 # Launch vm.
-$CLOUD_CLIENT/bin/cloud-client.sh --conf ./cloud.properties --run --name Mathematica-VM-0.4.img --hours 1 2>&1 | tee runlog.txt
+$CLOUD_CLIENT/bin/cloud-client.sh --conf ./cloud.properties --run --name Mathematica-VM.img.gz --hours 1 2>&1 | tee runlog.txt
 
 # Parse output of cloud-client to grab the IP address
 IP_ADDRESS=$(cat runlog.txt  | grep IP | awk '{print $3}')
 HANDLE=$(cat runlog.txt  | grep Running: | sed s/"'"/" "/g | awk '{print $2}')
 
-
+sleep 30
 echo "Adding $REMOTE_USER..."
-ssh root@$IP_ADDRESS /usr/sbin/adduser $REMOTE_USER
-ssh root@$IP_ADDRESS passwd $REMOTE_USER<<EOF
+ssh -i /tmp/id_rsa root@$IP_ADDRESS /usr/sbin/adduser $REMOTE_USER
+ssh -i /tmp/id_rsa root@$IP_ADDRESS passwd $REMOTE_USER<<EOF
 $USER_PASSWORD
 $USER_PASSWORD
 EOF
@@ -251,26 +251,9 @@ ${CREDENTIALS}
 vws.metadata.mountAs=sda"
 
 echo "${CLOUD_PROPERTIES}" > cloud.properties
-#cp cloud.properties $CLOUD_CLIENT/conf/cloud.properties
+cp cloud.properties $CLOUD_CLIENT/conf/cloud.properties
+rm /tmp/newkey
 
-# Launch VM again
-$CLOUD_CLIENT/bin/cloud-client.sh --conf ./cloud.properties --run --name Mathematica-VM-0.4.img --hours 1 2>&1 | tee runlog.txt
-
-# Parse output of cloud-client to grab the IP address
-IP_ADDRESS=$(cat runlog.txt  | grep IP | awk '{print $3}')
-HANDLE=$(cat runlog.txt  | grep Running: | sed s/"'"/" "/g | awk '{print $2}')
-
-# Test SSH login
-ssh $REMOTE_USER@$IP_ADDRESS echo "SSH access to the VM is functional."<<EOF
-$USER_PASSWORD
-EOF
-
-
-# Shutdown the bootstapped VM
-$CLOUD_CLIENT/bin/cloud-client.sh --conf ./cloud.properties --terminate --handle $HANDLE
-
-
-echo "Done."
 
 
 
