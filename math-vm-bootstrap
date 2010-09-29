@@ -252,7 +252,7 @@ vws.metadata.mountAs=sda"
 
 echo "${CLOUD_PROPERTIES}" > cloud.properties
 cp cloud.properties $CLOUD_CLIENT/conf/cloud.properties
-rm /tmp/newkey
+rm /tmp/id_rsa /tmp/id_rsa.pub
 
 
 
