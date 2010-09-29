@@ -251,7 +251,8 @@ ${CREDENTIALS}
 vws.metadata.mountAs=sda"
 
 echo "${CLOUD_PROPERTIES}" > cloud.properties
-cp cloud.properties $CLOUD_CLIENT/conf/cloud.properties
+mkdir ~/.nimbus
+cp cloud.properties ~/.nimbus/cloud.properties
 rm /tmp/id_rsa /tmp/id_rsa.pub
 
 
