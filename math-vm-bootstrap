@@ -9,8 +9,7 @@
 
 # Defaults
 CLOUD_CLIENT=/opt/nimbus-cloud-client/
-INSTALL_DIR=$(mktemp)
-mkdir $INSTALL_DIR
+INSTALL_DIR=$(mktemp -d)
 echo "Mathematica Virtual Machine Bootstrap Script."
 echo " "
 
