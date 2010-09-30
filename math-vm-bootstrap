@@ -8,16 +8,11 @@
 # Save VM back to Cumulus.
 
 # Defaults
-CLOUD_CLIENT=/opt/nimbus-service/nimbus-cloud-client/
+CLOUD_CLIENT=/opt/nimbus-cloud-client/
 INSTALL_DIRECTORY=/tmp/math-vm
 
 echo "Mathematica Virtual Machine Bootstrap Script."
 echo " "
-#if [ $(whoami) != 'root' ]	#Check for sudo/root permissions
-#        then
-#                echo "Please run this command with sudo or as root."
-#                exit
-#fi
 
 
 
