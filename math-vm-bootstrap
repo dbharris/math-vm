@@ -36,16 +36,20 @@ done
 
 cd $INSTALL_DIR
 
-
-# Grab cloud credentials.
-echo "Enter your repository S3id"
-read S3ID
-
-echo "Enter your repository s3key"
-read S3KEY
-
-echo "Enter your repository canonicalid"
-read CANONICALID
+if [ ! $CUSTOM_CONF ]
+	then
+		
+	# Grab cloud credentials.
+	echo "Enter your repository S3id"
+	read S3ID
+	
+	echo "Enter your repository s3key"
+	read S3KEY
+	
+	echo "Enter your repository canonicalid"
+	read CANONICALID
+	
+fi
 
 echo "Enter the new remote username:"
 read REMOTE_USER
