@@ -10,10 +10,35 @@
 # Defaults
 CLOUD_CLIENT=/opt/nimbus-cloud-client/
 INSTALL_DIR=$(mktemp -d)
+SCRIPT=`basename $0`
 echo "Mathematica Virtual Machine Bootstrap Script."
 echo " "
 
+
+USAGE="Usage:
+`basename $0` [-c|--conf custom-cloud.properties] [-h|--help]"
+
+# Parse command line arguments
+while [ "$1" != "" ]; do
+    case $1 in
+        -c | --conf )           shift
+                                CUSTOM_CONF=$1
+                                ;;
+	-u | --user )		shift
+				user=$1
+				;;
+        -h | --help )           echo $USAGE
+                                exit
+                                ;;
+        * )                     echo $USAGE
+                                exit 1
+    esac
+    shift
+done
+
+
 cd $INSTALL_DIR
+
 
 # Grab cloud credentials.
 echo "Enter your repository S3id"
@@ -132,10 +157,22 @@ echo "${CLOUD_PROPERTIES}" > cloud.properties
 wget http://vmrepo.heprc.uvic.ca/Mathematica-VM.img.gz
 
 # Load the image into the user's personal repository in Cumulus
-$CLOUD_CLIENT/bin/cloud-client.sh --conf ./cloud.properties --transfer --sourcefile ./Mathematica-VM.img.gz
+if [ $CUSTOM_CONF ]
+	then
+		$CLOUD_CLIENT/bin/cloud-client.sh --conf $CUSTOM_CONF --transfer --sourcefile ./Mathematica-VM.img.gz
+else
+	$CLOUD_CLIENT/bin/cloud-client.sh --conf ./cloud.properties --transfer --sourcefile ./Mathematica-VM.img.gz
+fi
+
+
 
 # Launch vm.
-$CLOUD_CLIENT/bin/cloud-client.sh --conf ./cloud.properties --run --name Mathematica-VM.img.gz --hours 1 2>&1 | tee runlog.txt
+if [ $CUSTOM_CONF ]
+	then
+		$CLOUD_CLIENT/bin/cloud-client.sh --conf $CUSTOM_CONF --run --name Mathematica-VM.img.gz --hours 1 2>&1 | tee runlog.txt
+else
+	$CLOUD_CLIENT/bin/cloud-client.sh --conf ./cloud.properties --run --name Mathematica-VM.img.gz --hours 1 2>&1 | tee runlog.txt
+fi
 
 # Parse output of cloud-client to grab the IP address
 IP_ADDRESS=$(cat runlog.txt  | grep IP | awk '{print $3}')
@@ -151,7 +188,12 @@ EOF
 
 
 # Shutdown-save the virtual machine
-$CLOUD_CLIENT/bin/cloud-client.sh --conf ./cloud.properties --save --handle $HANDLE
+if [ $CUSTOM_CONF ]
+	then
+		$CLOUD_CLIENT/bin/cloud-client.sh --conf $CUSTOM_CONF --save --handle $HANDLE
+else
+	$CLOUD_CLIENT/bin/cloud-client.sh --conf ./cloud.properties --save --handle $HANDLE
+fi
 
 # Remove old cloud.properties, write new one without root RSA key
 rm cloud.properties
@@ -232,13 +274,34 @@ vws.metadata.mountAs=sda"
 
 echo "${CLOUD_PROPERTIES}" > cloud.properties
 
-if [ -f ~/.nimbus/cloud.properties ]
+if [ ! -d ~/.nimbus/ ]
 	then
-		mv ~/.nimbus/cloud.properties ~/.nimbus/cloud.properties.bak
-		echo "Your current ~/.nimbus/cloud.properties has been moved to cloud.properties.bak."
+		mkdir ~/.nimbus
 fi
 
-cp cloud.properties ~/.nimbus/cloud.properties
+
+if [ $CUSTOM_CONF ]
+	
+	if [ -f ~/.nimbus/cloud.properties ]
+			then
+			
+			mv ~/.nimbus/cloud.properties ~/.nimbus/cloud.properties.bak
+			echo "Your current ~/.nimbus/cloud.properties has been moved to cloud.properties.bak."
+			cp $CUSTOM_CONF ~/.nimbus/cloud.properties
+	fi
+else
+	if [ -f ~/.nimbus/cloud.properties ]
+			then
+			
+			mv ~/.nimbus/cloud.properties ~/.nimbus/cloud.properties.bak
+			echo "Your current ~/.nimbus/cloud.properties has been moved to cloud.properties.bak."
+			cp cloud.properties ~/.nimbus/cloud.properties
+	fi
+	
+fi
+
+
+#Remove bootstrap files.
 rm $INSTALL_DIR/id_rsa $INSTALL_DIR/id_rsa.pub
 rm -r $INSTALL_DIR
 
