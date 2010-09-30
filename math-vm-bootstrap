@@ -234,7 +234,7 @@ echo "${CLOUD_PROPERTIES}" > cloud.properties
 mkdir ~/.nimbus
 cp cloud.properties ~/.nimbus/cloud.properties
 rm $INSTALL_DIR/id_rsa $INSTALL_DIR/id_rsa.pub
-
+rm -r $INSTALL_DIR
 
 
 
