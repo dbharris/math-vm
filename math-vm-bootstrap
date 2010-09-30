@@ -302,7 +302,7 @@ if [ $CUSTOM_CONF ]
 		fi
 	
 	
-fi
+else
 	if [ -f ~/.nimbus/cloud.properties ]
 		then
 			
