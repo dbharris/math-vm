@@ -231,7 +231,13 @@ ${CREDENTIALS}
 vws.metadata.mountAs=sda"
 
 echo "${CLOUD_PROPERTIES}" > cloud.properties
-mkdir ~/.nimbus
+
+if [ -f ~/.nimbus/cloud.properties ]
+	then
+		mv ~/.nimbus/cloud.properties ~/.nimbus/cloud.properties.bak
+		echo "Your current ~/.nimbus/cloud.properties has been moved to cloud.properties.bak."
+fi
+
 cp cloud.properties ~/.nimbus/cloud.properties
 rm $INSTALL_DIR/id_rsa $INSTALL_DIR/id_rsa.pub
 rm -r $INSTALL_DIR
