@@ -9,26 +9,12 @@
 
 # Defaults
 CLOUD_CLIENT=/opt/nimbus-cloud-client/
-INSTALL_DIRECTORY=/tmp/math-vm
+INSTALL_DIR=$(mktemp)
 
 echo "Mathematica Virtual Machine Bootstrap Script."
 echo " "
 
-
-
-if [ ! -d $INSTALL_DIRECTORY ]
-	then
-		mkdir $INSTALL_DIRECTORY
-		cd $INSTALL_DIRECTORY
-		
-else
-	echo "$INSTALL_DIRECTORY already exists. Please specify an alternate location."
-	read ALT_INSTALL
-	mkdir $ALT_INSTALL
-	cd $ALT_INSTALL
-fi
-
-
+cd $INSTALL_DIR
 
 # Grab cloud credentials.
 echo "Enter your repository S3id"
@@ -56,7 +42,7 @@ fi
 done
 stty echo
 
-ssh-keygen -N "" -f /tmp/id_rsa
+ssh-keygen -N "" -f $INSTALL_DIR/id_rsa
 
 CREDENTIALS="###########################################################################
 # Your image repository credentials
@@ -75,7 +61,7 @@ CLOUD_PROPERTIES="##############################################################
 # using the --ssh-pubkey flag.
 ###########################################################################
 
-ssh.pubkey=/tmp/id_rsa.pub
+ssh.pubkey=$INSTALL_DIR/id_rsa.pub
 
 
 ###########################################################################
@@ -158,8 +144,8 @@ HANDLE=$(cat runlog.txt  | grep Running: | sed s/"'"/" "/g | awk '{print $2}')
 
 sleep 30
 echo "Adding $REMOTE_USER..."
-ssh -i /tmp/id_rsa root@$IP_ADDRESS /usr/sbin/adduser $REMOTE_USER
-ssh -i /tmp/id_rsa root@$IP_ADDRESS passwd $REMOTE_USER<<EOF
+ssh -i $INSTALL_DIR/id_rsa root@$IP_ADDRESS /usr/sbin/adduser $REMOTE_USER
+ssh -i $INSTALL_DIR/id_rsa root@$IP_ADDRESS passwd $REMOTE_USER<<EOF
 $USER_PASSWORD
 $USER_PASSWORD
 EOF
@@ -248,7 +234,7 @@ vws.metadata.mountAs=sda"
 echo "${CLOUD_PROPERTIES}" > cloud.properties
 mkdir ~/.nimbus
 cp cloud.properties ~/.nimbus/cloud.properties
-rm /tmp/id_rsa /tmp/id_rsa.pub
+rm $INSTALL_DIR/id_rsa $INSTALL_DIR/id_rsa.pub
 
 
 
