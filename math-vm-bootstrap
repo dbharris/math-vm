@@ -51,6 +51,7 @@ if [ ! $CUSTOM_CONF ]
 	
 fi
 
+
 echo "Enter the new remote username:"
 read REMOTE_USER
 
@@ -157,8 +158,13 @@ ${CREDENTIALS}
 vws.metadata.mountAs=sda"
 
 
-
-echo "${CLOUD_PROPERTIES}" > cloud.properties
+if [ $CUSTOM_CONF ]; then	
+	cp $CUSTOM_CONF $INSTALLDIR/cloud.properties
+	sed -i ‘s/#ssh.pubkey/ssh.pubkey/’ cloud.properties
+	
+else
+	echo "${CLOUD_PROPERTIES}" > cloud.properties
+fi
 
 # Download the stock image
 echo "Downloading template image..."
@@ -167,21 +173,15 @@ echo "Done."
 
 # Load the image into the user's personal repository in Cumulus
 echo "Transferring image to Cumulus..."
-if [ $CUSTOM_CONF ]; then
-	$CLOUD_CLIENT/bin/cloud-client.sh --conf $CUSTOM_CONF --transfer --sourcefile ./Mathematica-VM.img.gz
-else
-	$CLOUD_CLIENT/bin/cloud-client.sh --conf ./cloud.properties --transfer --sourcefile ./Mathematica-VM.img.gz
-fi
+$CLOUD_CLIENT/bin/cloud-client.sh --conf ./cloud.properties --transfer --sourcefile ./Mathematica-VM.img.gz
+
 echo "Done."
 
 
 # Launch vm.
 echo "Launching VM..."
-if [ $CUSTOM_CONF ]; then
-	$CLOUD_CLIENT/bin/cloud-client.sh --conf $CUSTOM_CONF --run --name Mathematica-VM.img.gz --hours 1 2>&1 | tee runlog.txt
-else
-	$CLOUD_CLIENT/bin/cloud-client.sh --conf ./cloud.properties --run --name Mathematica-VM.img.gz --hours 1 2>&1 | tee runlog.txt
-fi
+$CLOUD_CLIENT/bin/cloud-client.sh --conf ./cloud.properties --run --name Mathematica-VM.img.gz --hours 1 2>&1 | tee runlog.txt
+
 
 # Parse output of cloud-client to grab the IP address
 IP_ADDRESS=$(cat runlog.txt  | grep IP | awk '{print $3}')
@@ -232,15 +232,17 @@ fi
 
 # Shutdown-save the virtual machine
 echo "Saving VM..."
-if [ $CUSTOM_CONF ]; then
-	$CLOUD_CLIENT/bin/cloud-client.sh --conf $CUSTOM_CONF --save --handle $HANDLE
-else
-	$CLOUD_CLIENT/bin/cloud-client.sh --conf ./cloud.properties --save --handle $HANDLE
-fi
+$CLOUD_CLIENT/bin/cloud-client.sh --conf ./cloud.properties --save --handle $HANDLE
+
 echo "Done."
 
 # Remove old cloud.properties, write new one without root RSA key
-rm cloud.properties
+if [ $CUSTOM_CONF ]; then
+	sed -i ‘s/ssh.pubkey/#ssh.pubkey/’ cloud.properties
+
+else
+	rm cloud.properties
+fi
 
 # Write new cloud.properties
 
@@ -316,7 +318,9 @@ ${CREDENTIALS}
 # Extra stuff
 vws.metadata.mountAs=sda"
 
-echo "${CLOUD_PROPERTIES}" > cloud.properties
+if [ ! $CUSTOM_CONF ]; then
+	echo "${CLOUD_PROPERTIES}" > cloud.properties
+fi
 
 if [ ! -d ~/.nimbus/ ]
 	then
@@ -324,28 +328,17 @@ if [ ! -d ~/.nimbus/ ]
 fi
 
 
-if [ $CUSTOM_CONF ]; then	
-	if [ -f ~/.nimbus/cloud.properties ]; then
-			
-			mv ~/.nimbus/cloud.properties ~/.nimbus/cloud.properties.bak
-			echo "Your current ~/.nimbus/cloud.properties has been moved to cloud.properties.bak."
-			cp $CUSTOM_CONF ~/.nimbus/cloud.properties
-	else
-		cp $CUSTOM_CONF ~/.nimbus/cloud.properties
-	fi
 
-
+if [ -f ~/.nimbus/cloud.properties ]; then
+		
+	mv ~/.nimbus/cloud.properties ~/.nimbus/cloud.properties.bak
+	echo "Your current ~/.nimbus/cloud.properties has been moved to cloud.properties.bak."
+	cp cloud.properties ~/.nimbus/cloud.properties
 else
-	if [ -f ~/.nimbus/cloud.properties ]; then
-			
-		mv ~/.nimbus/cloud.properties ~/.nimbus/cloud.properties.bak
-		echo "Your current ~/.nimbus/cloud.properties has been moved to cloud.properties.bak."
-		cp cloud.properties ~/.nimbus/cloud.properties
-	else
-		cp cloud.properties ~/.nimbus/cloud.properties
-	fi
-	
+	cp cloud.properties ~/.nimbus/cloud.properties
 fi
+
+
 
 
 #Remove bootstrap files.
