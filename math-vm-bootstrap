@@ -67,8 +67,12 @@ fi
 done
 stty echo
 
-echo "Generating RSA key..."
-ssh-keygen -N "" -f $INSTALL_DIR/id_rsa
+if [ $CUSTOM_CONF ]; then
+	CUSTOM_KEY=grep "ssh.pubkey=" $CUSTOM_CONF | sed 's/.*=\(.*\)/\1/'
+else
+	echo "Generating RSA key..."
+	ssh-keygen -N "" -f $INSTALL_DIR/id_rsa
+fi
 
 
 CREDENTIALS="###########################################################################
@@ -163,9 +167,8 @@ echo "Done."
 
 # Load the image into the user's personal repository in Cumulus
 echo "Transferring image to Cumulus..."
-if [ $CUSTOM_CONF ]
-	then
-		$CLOUD_CLIENT/bin/cloud-client.sh --conf $CUSTOM_CONF --transfer --sourcefile ./Mathematica-VM.img.gz
+if [ $CUSTOM_CONF ]; then
+	$CLOUD_CLIENT/bin/cloud-client.sh --conf $CUSTOM_CONF --transfer --sourcefile ./Mathematica-VM.img.gz
 else
 	$CLOUD_CLIENT/bin/cloud-client.sh --conf ./cloud.properties --transfer --sourcefile ./Mathematica-VM.img.gz
 fi
@@ -174,9 +177,8 @@ echo "Done."
 
 # Launch vm.
 echo "Launching VM..."
-if [ $CUSTOM_CONF ]
-	then
-		$CLOUD_CLIENT/bin/cloud-client.sh --conf $CUSTOM_CONF --run --name Mathematica-VM.img.gz --hours 1 2>&1 | tee runlog.txt
+if [ $CUSTOM_CONF ]; then
+	$CLOUD_CLIENT/bin/cloud-client.sh --conf $CUSTOM_CONF --run --name Mathematica-VM.img.gz --hours 1 2>&1 | tee runlog.txt
 else
 	$CLOUD_CLIENT/bin/cloud-client.sh --conf ./cloud.properties --run --name Mathematica-VM.img.gz --hours 1 2>&1 | tee runlog.txt
 fi
@@ -188,29 +190,50 @@ HANDLE=$(cat runlog.txt  | grep Running: | sed s/"'"/" "/g | awk '{print $2}')
 
 i="0"
 # if there's an error, $? will be nonzero
-while [ $i -lt 30 ]; do
-        ssh -i $INSTALL_DIR/id_rsa -o StrictHostKeyChecking=no root@$IP_ADDRESS echo "SSH appears functional."
-	if [ $? == "0" ]; then
-                break
-        else
-                sleep 10
-		i=$[$i+1]
-        fi
-done
+if [ $CUSTOM_CONF ]; then
+	while [ $i -lt 30 ]; do
+		ssh -i $CUSTOM_KEY -o StrictHostKeyChecking=no root@$IP_ADDRESS echo "SSH appears functional."
+		if [ $? == "0" ]; then
+			break
+		else
+			sleep 10
+			i=$[$i+1]
+		fi
+	done
+else
+	while [ $i -lt 30 ]; do
+		ssh -i $INSTALL_DIR/id_rsa -o StrictHostKeyChecking=no root@$IP_ADDRESS echo "SSH appears functional."
+		if [ $? == "0" ]; then
+			break
+		else
+			sleep 10
+			i=$[$i+1]
+		fi
+	done
+fi
 
-echo "Adding $REMOTE_USER..."
-ssh -i $INSTALL_DIR/id_rsa -o StrictHostKeyChecking=no root@$IP_ADDRESS /usr/sbin/adduser $REMOTE_USER
-ssh -i $INSTALL_DIR/id_rsa -o StrictHostKeyChecking=no root@$IP_ADDRESS passwd $REMOTE_USER<<EOF
-$USER_PASSWORD
-$USER_PASSWORD
-EOF
+
+if [ $CUSTOM_CONF ]; then
+	echo "Adding $REMOTE_USER..."
+	ssh -i $CUSTOM_KEY -o StrictHostKeyChecking=no root@$IP_ADDRESS /usr/sbin/adduser $REMOTE_USER
+	ssh -i $CUSTOM_KEY -o StrictHostKeyChecking=no root@$IP_ADDRESS passwd $REMOTE_USER<<EOF
+	$USER_PASSWORD
+	$USER_PASSWORD
+	EOF
+else
+	echo "Adding $REMOTE_USER..."
+	ssh -i $INSTALL_DIR/id_rsa -o StrictHostKeyChecking=no root@$IP_ADDRESS /usr/sbin/adduser $REMOTE_USER
+	ssh -i $INSTALL_DIR/id_rsa -o StrictHostKeyChecking=no root@$IP_ADDRESS passwd $REMOTE_USER<<EOF
+	$USER_PASSWORD
+	$USER_PASSWORD
+	EOF
+fi
 
 
 # Shutdown-save the virtual machine
 echo "Saving VM..."
-if [ $CUSTOM_CONF ]
-	then
-		$CLOUD_CLIENT/bin/cloud-client.sh --conf $CUSTOM_CONF --save --handle $HANDLE
+if [ $CUSTOM_CONF ]; then
+	$CLOUD_CLIENT/bin/cloud-client.sh --conf $CUSTOM_CONF --save --handle $HANDLE
 else
 	$CLOUD_CLIENT/bin/cloud-client.sh --conf ./cloud.properties --save --handle $HANDLE
 fi
@@ -313,12 +336,11 @@ if [ $CUSTOM_CONF ]; then
 
 
 else
-	if [ -f ~/.nimbus/cloud.properties ]
-		then
+	if [ -f ~/.nimbus/cloud.properties ]; then
 			
-			mv ~/.nimbus/cloud.properties ~/.nimbus/cloud.properties.bak
-			echo "Your current ~/.nimbus/cloud.properties has been moved to cloud.properties.bak."
-			cp cloud.properties ~/.nimbus/cloud.properties
+		mv ~/.nimbus/cloud.properties ~/.nimbus/cloud.properties.bak
+		echo "Your current ~/.nimbus/cloud.properties has been moved to cloud.properties.bak."
+		cp cloud.properties ~/.nimbus/cloud.properties
 	else
 		cp cloud.properties ~/.nimbus/cloud.properties
 	fi
