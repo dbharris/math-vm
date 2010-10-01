@@ -185,6 +185,8 @@ fi
 IP_ADDRESS=$(cat runlog.txt  | grep IP | awk '{print $3}')
 HANDLE=$(cat runlog.txt  | grep Running: | sed s/"'"/" "/g | awk '{print $2}')
 
+
+i="0"
 # if there's an error, $? will be nonzero
 while [ $i -lt 30 ]; do
         ssh -i $INSTALL_DIR/id_rsa -o StrictHostKeyChecking=no root@$IP_ADDRESS echo "SSH appears functional."
