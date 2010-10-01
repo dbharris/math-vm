@@ -68,7 +68,7 @@ done
 stty echo
 
 echo "Generating RSA key..."
-ssh-keygen -N "" -f $INSTALL_DIR/id_rsa > /dev/null
+ssh-keygen -N "" -f $INSTALL_DIR/id_rsa
 
 
 CREDENTIALS="###########################################################################
@@ -158,7 +158,7 @@ echo "${CLOUD_PROPERTIES}" > cloud.properties
 
 # Download the stock image
 echo "Downloading template image..."
-wget http://vmrepo.heprc.uvic.ca/Mathematica-VM.img.gz > /dev/null
+wget http://vmrepo.heprc.uvic.ca/Mathematica-VM.img.gz
 echo "Done."
 
 # Load the image into the user's personal repository in Cumulus
@@ -185,7 +185,16 @@ fi
 IP_ADDRESS=$(cat runlog.txt  | grep IP | awk '{print $3}')
 HANDLE=$(cat runlog.txt  | grep Running: | sed s/"'"/" "/g | awk '{print $2}')
 
-sleep 30
+# if there's an error, $? will be nonzero
+while [ $i -lt 30 ]; do
+        ssh -i $INSTALL_DIR/id_rsa -o StrictHostKeyChecking=no root@$IP_ADDRESS echo "SSH appears functional."
+	if [ $? == "0" ]; then
+                break
+        else
+                sleep 10
+        fi
+done
+
 echo "Adding $REMOTE_USER..."
 ssh -i $INSTALL_DIR/id_rsa -o StrictHostKeyChecking=no root@$IP_ADDRESS /usr/sbin/adduser $REMOTE_USER
 ssh -i $INSTALL_DIR/id_rsa -o StrictHostKeyChecking=no root@$IP_ADDRESS passwd $REMOTE_USER<<EOF
@@ -289,19 +298,17 @@ if [ ! -d ~/.nimbus/ ]
 fi
 
 
-if [ $CUSTOM_CONF ]
-	then	
-		if [ -f ~/.nimbus/cloud.properties ]
-			then
-				
-				mv ~/.nimbus/cloud.properties ~/.nimbus/cloud.properties.bak
-				echo "Your current ~/.nimbus/cloud.properties has been moved to cloud.properties.bak."
-				cp $CUSTOM_CONF ~/.nimbus/cloud.properties
-		else
+if [ $CUSTOM_CONF ]; then	
+	if [ -f ~/.nimbus/cloud.properties ]; then
+			
+			mv ~/.nimbus/cloud.properties ~/.nimbus/cloud.properties.bak
+			echo "Your current ~/.nimbus/cloud.properties has been moved to cloud.properties.bak."
 			cp $CUSTOM_CONF ~/.nimbus/cloud.properties
-		fi
-	
-	
+	else
+		cp $CUSTOM_CONF ~/.nimbus/cloud.properties
+	fi
+
+
 else
 	if [ -f ~/.nimbus/cloud.properties ]
 		then
