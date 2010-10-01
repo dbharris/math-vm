@@ -68,12 +68,9 @@ fi
 done
 stty echo
 
-if [ $CUSTOM_CONF ]; then
-	CUSTOM_KEY=$(grep "ssh.pubkey=" $CUSTOM_CONF | sed 's/.*=\(.*\)/\1/')
-else
-	echo "Generating RSA key..."
-	ssh-keygen -N "" -f $INSTALL_DIR/id_rsa
-fi
+echo "Generating RSA key..."
+ssh-keygen -N "" -f $INSTALL_DIR/id_rsa
+
 
 
 CREDENTIALS="###########################################################################
@@ -160,7 +157,8 @@ vws.metadata.mountAs=sda"
 
 if [ $CUSTOM_CONF ]; then	
 	cp $CUSTOM_CONF $INSTALL_DIR/cloud.properties
-	sed -i s/\#ssh.pubkey/ssh.pubkey/g cloud.properties
+	sed -i s/ssh.pubkey/\#ssh.pubkey/g cloud.properties
+	echo "ssh.pubkey=$INSTALL_DIR/id_rsa.pub" >> cloud.properties
 	
 else
 	echo "${CLOUD_PROPERTIES}" > cloud.properties
@@ -190,44 +188,25 @@ HANDLE=$(cat runlog.txt  | grep Running: | sed s/"'"/" "/g | awk '{print $2}')
 
 i="0"
 # if there's an error, $? will be nonzero
-if [ $CUSTOM_CONF ]; then
-	while [ $i -lt 30 ]; do
-		ssh -i $CUSTOM_KEY -o StrictHostKeyChecking=no root@$IP_ADDRESS echo "SSH appears functional."
-		if [ $? == "0" ]; then
-			break
-		else
-			sleep 10
-			i=$[$i+1]
-		fi
-	done
-else
-	while [ $i -lt 30 ]; do
-		ssh -i $INSTALL_DIR/id_rsa -o StrictHostKeyChecking=no root@$IP_ADDRESS echo "SSH appears functional."
-		if [ $? == "0" ]; then
-			break
-		else
-			sleep 10
-			i=$[$i+1]
-		fi
-	done
-fi
+while [ $i -lt 30 ]; do
+	ssh -i $INSTALL_DIR/id_rsa -o StrictHostKeyChecking=no root@$IP_ADDRESS echo "SSH appears functional."
+	if [ $? == "0" ]; then
+		break
+	else
+		sleep 10
+		i=$[$i+1]
+	fi
+done
 
 
-if [ $CUSTOM_CONF ]; then
-	echo "Adding $REMOTE_USER..."
-	ssh -i $CUSTOM_KEY -o StrictHostKeyChecking=no root@$IP_ADDRESS /usr/sbin/adduser $REMOTE_USER
-	ssh -i $CUSTOM_KEY -o StrictHostKeyChecking=no root@$IP_ADDRESS passwd $REMOTE_USER<<EOF
-	$USER_PASSWORD
-	$USER_PASSWORD
-	EOF
-else
-	echo "Adding $REMOTE_USER..."
-	ssh -i $INSTALL_DIR/id_rsa -o StrictHostKeyChecking=no root@$IP_ADDRESS /usr/sbin/adduser $REMOTE_USER
-	ssh -i $INSTALL_DIR/id_rsa -o StrictHostKeyChecking=no root@$IP_ADDRESS passwd $REMOTE_USER<<EOF
-	$USER_PASSWORD
-	$USER_PASSWORD
-	EOF
-fi
+
+echo "Adding $REMOTE_USER..."
+ssh -i $INSTALL_DIR/id_rsa -o StrictHostKeyChecking=no root@$IP_ADDRESS /usr/sbin/adduser $REMOTE_USER
+ssh -i $INSTALL_DIR/id_rsa -o StrictHostKeyChecking=no root@$IP_ADDRESS passwd $REMOTE_USER<<EOF
+$USER_PASSWORD
+$USER_PASSWORD
+EOF
+
 
 
 # Shutdown-save the virtual machine
