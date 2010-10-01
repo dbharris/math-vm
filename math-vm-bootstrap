@@ -160,7 +160,7 @@ vws.metadata.mountAs=sda"
 
 if [ $CUSTOM_CONF ]; then	
 	cp $CUSTOM_CONF $INSTALL_DIR/cloud.properties
-	sed ‘s/#ssh.pubkey/ssh.pubkey/’ cloud.properties
+	sed -i s/\#ssh.pubkey/ssh.pubkey/g cloud.properties
 	
 else
 	echo "${CLOUD_PROPERTIES}" > cloud.properties
@@ -238,7 +238,7 @@ echo "Done."
 
 # Remove old cloud.properties, write new one without root RSA key
 if [ $CUSTOM_CONF ]; then
-	sed -i s/\#ssh.pubkey/ssh.pubkey/g cloud.properties
+	sed -i s/ssh.pubkey/\#ssh.pubkey/g cloud.properties
 
 else
 	rm cloud.properties
