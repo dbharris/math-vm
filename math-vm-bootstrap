@@ -238,7 +238,7 @@ echo "Done."
 
 # Remove old cloud.properties, write new one without root RSA key
 if [ $CUSTOM_CONF ]; then
-	sed ‘s/ssh.pubkey/#ssh.pubkey/’ cloud.properties
+	sed -i s/\#ssh.pubkey/ssh.pubkey/g cloud.properties
 
 else
 	rm cloud.properties
