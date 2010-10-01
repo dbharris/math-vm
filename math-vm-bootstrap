@@ -159,7 +159,7 @@ vws.metadata.mountAs=sda"
 
 
 if [ $CUSTOM_CONF ]; then	
-	cp $CUSTOM_CONF $INSTALLDIR/cloud.properties
+	cp $CUSTOM_CONF $INSTALL_DIR/cloud.properties
 	sed -i ‘s/#ssh.pubkey/ssh.pubkey/’ cloud.properties
 	
 else
