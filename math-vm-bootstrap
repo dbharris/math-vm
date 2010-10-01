@@ -68,7 +68,7 @@ done
 stty echo
 
 if [ $CUSTOM_CONF ]; then
-	CUSTOM_KEY=grep "ssh.pubkey=" $CUSTOM_CONF | sed 's/.*=\(.*\)/\1/'
+	CUSTOM_KEY=$(grep "ssh.pubkey=" $CUSTOM_CONF | sed 's/.*=\(.*\)/\1/')
 else
 	echo "Generating RSA key..."
 	ssh-keygen -N "" -f $INSTALL_DIR/id_rsa
