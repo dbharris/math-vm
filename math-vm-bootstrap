@@ -298,7 +298,7 @@ ${CREDENTIALS}
 vws.metadata.mountAs=sda"
 
 if [ $CUSTOM_CONF ]; then
-	sed -i "%ssh.pubkey=$INSTALL_DIR/id_rsa.pub%d" cloud.properties
+	sed -i "\%ssh.pubkey=$INSTALL_DIR/id_rsa.pub%d" cloud.properties
 else
 	echo "${CLOUD_PROPERTIES}" > cloud.properties
 fi
