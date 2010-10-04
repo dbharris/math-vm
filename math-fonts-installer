@@ -3,7 +3,6 @@
 #by Drew Harris
 
 #Defaults
-LINUX_XINIT=/etc/X11/xinit
 LINUX_FONT_LOCATION=/opt/mathfonts
 MAC_FONT_LOCATION=/usr/X11/lib/X11/fonts/mathfonts
 
@@ -32,9 +31,9 @@ if [ $(uname) == 'Linux' ]	#if Linux detected
 		xset fp rehash
 
 		#Store in xinitrc so the fonts are loaded on startup.
-		bash -c "echo 'xset fp+ $LINUX_FONT_LOCATION/Fonts/Type1' >> $LINUX_XINIT/xinitrc"
-		bash -c "echo 'xset fp+ $LINUX_FONT_LOCATION/Fonts/BDF' >> $LINUX_XINIT/xinitrc"
-		bash -c "echo 'xset fp rehash' >> $LINUX_XINIT/xinitrc"
+		bash -c "echo 'xset fp+ $LINUX_FONT_LOCATION/Fonts/Type1' >> ~/.bashrc"
+		bash -c "echo 'xset fp+ $LINUX_FONT_LOCATION/Fonts/BDF' >> ~/.bashrc"
+		bash -c "echo 'xset fp rehash' >> ~/.bashrc"
 
 		#Clean up
 		cd $LINUX_FONT_LOCATION
