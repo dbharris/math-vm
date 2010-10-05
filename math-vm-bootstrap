@@ -33,10 +33,10 @@ while [ "$1" != "" ]; do
     shift
 done
 
-if [ ! grid-proxy-info -exists ]; then
+if [ $(grid-proxy-info -exists) ]; then
 	echo "Please run grid-proxy-init to obtain a proxy certificate."
-	exit 1
-	done
+	exit
+	
 fi
 
 cd $INSTALL_DIR
