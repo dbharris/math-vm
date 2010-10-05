@@ -206,8 +206,11 @@ ssh -i $INSTALL_DIR/id_rsa -o StrictHostKeyChecking=no root@$IP_ADDRESS passwd $
 $USER_PASSWORD
 $USER_PASSWORD
 EOF
-
-
+echo "Adding $REMOTE_USER to the sudoers file..."
+ssh -i $INSTALL_DIR/id_rsa -o StrictHostKeyChecking=no root@$IP_ADDRESS 'echo "# Adding remote sudo access" >> /etc/sudoers'
+ssh -i $INSTALL_DIR/id_rsa -o StrictHostKeyChecking=no root@$IP_ADDRESS 'cp /etc/sudoers /etc/sudoers.bak'
+ssh -i $INSTALL_DIR/id_rsa -o StrictHostKeyChecking=no root@$IP_ADDRESS "echo '$REMOTE_USER        ALL=(ALL)       ALL' >> /etc/sudoers"
+echo "Done."
 
 # Shutdown-save the virtual machine
 echo "Saving VM..."
