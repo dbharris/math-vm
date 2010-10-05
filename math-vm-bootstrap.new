@@ -1,0 +1,349 @@
+#!/bin/bash
+# Mathematica Virtualization Bootstrap Script 0.1
+# Logic:
+# Download image through HTTP.  Run with cloud client, injecting public-key for root access
+# Use cloud client with template 1, *with cloud credentials*
+# SSH into the VM using the public key.
+# Create a user account, using keyboard input for the username and password.
+# Save VM back to Cumulus.
+
+# Defaults
+CLOUD_CLIENT=/opt/nimbus-cloud-client/
+INSTALL_DIR=$(mktemp -d)
+SCRIPT=`basename $0`
+echo "Mathematica Virtual Machine Bootstrap Script."
+echo " "
+
+
+USAGE="Usage:
+`basename $0` [-c|--conf custom-cloud.properties] [-h|--help] [-d|--debug]"
+
+# Parse command line arguments
+while [ "$1" != "" ]; do
+    case $1 in
+        -c | --conf )           shift
+                                CUSTOM_CONF=$1
+                                ;;
+	-d | --debug )          shift
+                                DEBUG_ENABLE="yes"
+                                ;;
+        -h | --help )           echo $USAGE
+                                exit
+                                ;;
+        * )                     echo $USAGE
+                                exit 1
+    esac
+    shift
+done
+
+if [ $(grid-proxy-info -exists) ]; then
+	echo "Please run grid-proxy-init to obtain a proxy certificate."
+	exit
+	
+fi
+
+cd $INSTALL_DIR
+
+if [ ! $CUSTOM_CONF ]
+	then
+		
+	# Grab cloud credentials.
+	echo "Enter your repository S3id"
+	read S3ID
+	
+	echo "Enter your repository s3key"
+	read S3KEY
+	
+	echo "Enter your repository canonicalid"
+	read CANONICALID
+	
+fi
+
+
+echo "Enter the new remote username:"
+read REMOTE_USER
+
+stty -echo
+while printf "Enter the remote user's password: "; do
+        read USER_PASSWORD && echo -e "\n"
+        printf "Please re-enter the password: "
+        read USER_PASSWORD2 && echo -e "\n"
+if [ "$USER_PASSWORD" = "$USER_PASSWORD2" ]; then
+        break
+else
+        echo -e "Passwords do not match. Please try again."
+fi
+done
+stty echo
+
+echo "Generating RSA key..."
+ssh-keygen -N "" -f $INSTALL_DIR/id_rsa > debug.log
+
+
+
+CREDENTIALS="###########################################################################
+# Your image repository credentials
+###########################################################################
+
+vws.repository.s3id=${S3ID}
+vws.repository.s3key=${S3KEY}
+vws.repository.canonicalid=${CANONICALID}"
+
+
+CLOUD_PROPERTIES="###########################################################################
+# Path to SSH public key to log in with.
+#
+# If left blank or deleted, the client will proceed calling the service
+# without an SSH just-in-time configuration request. You can override
+# using the --ssh-pubkey flag.
+###########################################################################
+
+ssh.pubkey=$INSTALL_DIR/id_rsa.pub
+
+
+###########################################################################
+# Path to SSH known_hosts file
+#
+# If a remote host's SSH public key is made available, the presence of
+# this configuration signals the cloud client to replace the corresponding
+# IP and/or hostname entry in the SSH known_hosts file.
+#
+# Only used when you invoke --cluster and use contextualization
+#
+# You can disable this behavior by leaving blank or deleting.
+###########################################################################
+
+ssh.hostsfile=~/.ssh/known_hosts
+
+
+###########################################################################
+# Host+port of the Nimbus central service (not the URL)
+###########################################################################
+
+vws.factory=elephant.heprc.uvic.ca:8443
+
+
+###########################################################################
+# Default settings for this Nimbus cloud
+###########################################################################
+
+vws.memory.request=256
+vws.cores.request=1
+
+
+###########################################################################
+# Host+port of image repository (not the URL)
+###########################################################################
+
+vws.repository=elephant.heprc.uvic.ca:8888
+
+
+###########################################################################
+# Virtal Workspace Service identity, to verify we are talking to the
+# right machine.
+###########################################################################
+
+vws.factory.identity=/C=CA/O=Grid/CN=host/elephant.heprc.uvic.ca
+
+
+###########################################################################
+# Image repository settings
+###########################################################################
+
+vws.repository.type=cumulus
+vws.repository.s3basekey=VMS
+vws.repository.s3bucket=Repo
+vws.repository.s3https=false
+vws.repository.s3acceptallcerts=false
+
+
+${CREDENTIALS}
+
+# Extra stuff
+vws.metadata.mountAs=sda"
+
+
+if [ $CUSTOM_CONF ]; then	
+	cp $CUSTOM_CONF $INSTALL_DIR/cloud.properties
+	sed -i s/ssh.pubkey/\#ssh.pubkey/g cloud.properties
+	echo "ssh.pubkey=$INSTALL_DIR/id_rsa.pub" >> cloud.properties
+	
+else
+	echo "${CLOUD_PROPERTIES}" > cloud.properties
+fi
+
+# Download the stock image
+echo "Downloading template image..."
+wget http://vmrepo.heprc.uvic.ca/Mathematica-VM.img.gz
+echo "Done."
+
+# Load the image into the user's personal repository in Cumulus
+echo "Transferring image to Cumulus..."
+$CLOUD_CLIENT/bin/cloud-client.sh --conf ./cloud.properties --transfer --sourcefile ./Mathematica-VM.img.gz
+
+echo "Done."
+
+
+# Launch vm.
+echo "Launching VM..."
+$CLOUD_CLIENT/bin/cloud-client.sh --conf ./cloud.properties --run --name Mathematica-VM.img.gz --hours 1 2>&1 | tee runlog.txt
+
+
+# Parse output of cloud-client to grab the IP address
+IP_ADDRESS=$(cat runlog.txt  | grep IP | awk '{print $3}')
+HANDLE=$(cat runlog.txt  | grep Running: | sed s/"'"/" "/g | awk '{print $2}')
+
+
+i="0"
+# if there's an error, $? will be nonzero
+while [ $i -lt 30 ]; do
+	ssh -i $INSTALL_DIR/id_rsa -o StrictHostKeyChecking=no root@$IP_ADDRESS > /dev/null
+ 	echo "SSH appears functional."
+	if [ $? == "0" ]; then
+		break
+	else
+		sleep 10
+		i=$[$i+1]
+	fi
+done
+
+
+
+echo "Adding $REMOTE_USER..."
+ssh -i $INSTALL_DIR/id_rsa -o StrictHostKeyChecking=no root@$IP_ADDRESS /usr/sbin/adduser $REMOTE_USER > debug.log
+ssh -i $INSTALL_DIR/id_rsa -o StrictHostKeyChecking=no root@$IP_ADDRESS passwd $REMOTE_USER<<EOF 
+$USER_PASSWORD
+$USER_PASSWORD
+EOF
+echo "Adding $REMOTE_USER to the sudoers file..."
+ssh -i $INSTALL_DIR/id_rsa -o StrictHostKeyChecking=no root@$IP_ADDRESS 'echo "# Adding remote sudo access" >> /etc/sudoers' > debug.log
+ssh -i $INSTALL_DIR/id_rsa -o StrictHostKeyChecking=no root@$IP_ADDRESS 'cp /etc/sudoers /etc/sudoers.bak' > debug.log
+ssh -i $INSTALL_DIR/id_rsa -o StrictHostKeyChecking=no root@$IP_ADDRESS "echo '$REMOTE_USER        ALL=(ALL)       ALL' >> /etc/sudoers" > debug.log
+echo "Done."
+
+# Shutdown-save the virtual machine
+echo "Saving VM..."
+$CLOUD_CLIENT/bin/cloud-client.sh --conf ./cloud.properties --save --handle $HANDLE > debug.log
+
+echo "Done."
+
+# Remove old cloud.properties, write new one without root RSA key
+if [ $CUSTOM_CONF ]; then
+	sed -i s/ssh.pubkey/\#ssh.pubkey/g cloud.properties
+
+else
+	rm cloud.properties
+fi
+
+# Write new cloud.properties
+
+CLOUD_PROPERTIES="###########################################################################
+# Path to SSH public key to log in with.
+#
+# If left blank or deleted, the client will proceed calling the service
+# without an SSH just-in-time configuration request. You can override
+# using the --ssh-pubkey flag.
+###########################################################################
+
+#ssh.pubkey=~/.ssh/id_rsa.pub
+
+
+###########################################################################
+# Path to SSH known_hosts file
+#
+# If a remote host's SSH public key is made available, the presence of
+# this configuration signals the cloud client to replace the corresponding
+# IP and/or hostname entry in the SSH known_hosts file.
+#
+# Only used when you invoke --cluster and use contextualization
+#
+# You can disable this behavior by leaving blank or deleting.
+###########################################################################
+
+ssh.hostsfile=~/.ssh/known_hosts
+
+
+###########################################################################
+# Host+port of the Nimbus central service (not the URL)
+###########################################################################
+
+vws.factory=elephant.heprc.uvic.ca:8443
+
+
+###########################################################################
+# Default settings for this Nimbus cloud
+###########################################################################
+
+vws.memory.request=256
+vws.cores.request=1
+
+
+###########################################################################
+# Host+port of image repository (not the URL)
+###########################################################################
+
+vws.repository=elephant.heprc.uvic.ca:8888
+
+
+###########################################################################
+# Virtal Workspace Service identity, to verify we are talking to the
+# right machine.
+###########################################################################
+
+vws.factory.identity=/C=CA/O=Grid/CN=host/elephant.heprc.uvic.ca
+
+
+###########################################################################
+# Image repository settings
+###########################################################################
+
+vws.repository.type=cumulus
+vws.repository.s3basekey=VMS
+vws.repository.s3bucket=Repo
+vws.repository.s3https=false
+vws.repository.s3acceptallcerts=false
+
+
+${CREDENTIALS}
+
+# Extra stuff
+vws.metadata.mountAs=sda"
+
+if [ $CUSTOM_CONF ]; then
+	sed -i "\%ssh.pubkey=$INSTALL_DIR/id_rsa.pub%d" cloud.properties
+else
+	echo "${CLOUD_PROPERTIES}" > cloud.properties
+fi
+
+if [ ! -d ~/.nimbus/ ]
+	then
+		mkdir ~/.nimbus
+fi
+
+
+
+if [ -f ~/.nimbus/cloud.properties ]; then
+		
+	mv ~/.nimbus/cloud.properties ~/.nimbus/cloud.properties.bak
+	echo "Your current ~/.nimbus/cloud.properties has been moved to cloud.properties.bak."
+	cp cloud.properties ~/.nimbus/cloud.properties
+else
+	cp cloud.properties ~/.nimbus/cloud.properties
+fi
+
+
+
+
+#Remove bootstrap files.
+if [ $DEBUG_ENABLE != "yes" ]; then
+	 
+	rm -r $INSTALL_DIR
+fi
+
+
+
+
+
+
+
+
