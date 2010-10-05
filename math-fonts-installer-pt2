@@ -1,0 +1,29 @@
+#!/bin/bash
+#Installs Mathematica 7 fonts on a Linux or Mac workstation.
+#by Drew Harris
+
+
+LINUX_FONT_LOCATION=/opt/mathfonts
+MAC_FONT_LOCATION=/usr/X11/lib/X11/fonts/mathfonts
+
+#Check for operating system
+if [ $(uname) == 'Linux' ]	#if Linux detected
+	then
+		
+		#Store in xinitrc so the fonts are loaded on startup.
+		echo 'xset fp+ $LINUX_FONT_LOCATION/Fonts/Type1' >> ~/.bashrc
+		echo 'xset fp+ $LINUX_FONT_LOCATION/Fonts/BDF' >> ~/.bashrc
+		echo 'xset fp rehash' >> ~/.bashrc
+
+		echo "Done."
+fi
+
+if [ $(uname) != 'Linux' ] 
+	then
+		echo "Done."
+fi
+
+
+				
+		
+
