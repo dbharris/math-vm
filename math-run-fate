@@ -6,7 +6,7 @@ DEFAULTCLOUD=elephant.heprc.uvic.ca
 DEFAULTNETWORK=public
 DEFAULTRAM=1024
 DEFAULTIMAGE='http://vmrepo.heprc.uvic.ca/Mathematica-VM-0.4.img'
-DURATION=240
+DURATION=60
 
 SCRIPT=`basename $0`
 DATESTAMP=`date +%s`
@@ -134,7 +134,7 @@ $GLOBUS_LOCATION/bin/workspace \
     -o ${CUSTFILE} \
     --metadata ${NIMBUSFILE} \
     -s https://${cloud}:8443/wsrf/services/WorkspaceFactoryService \
-    --deploy-duration 400 \
+    --deploy-duration $DURATION \
     --deploy-mem ${ram} \
     --deploy-state Running \
     --trash-at-shutdown \

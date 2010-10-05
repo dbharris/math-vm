@@ -3,7 +3,7 @@
 #by Drew Harris
 
 #Defaults
-LINUX_FONT_LOCATION=/opt/mathfonts
+LINUX_FONT_LOCATION=/usr/share/fonts/mathematica
 MAC_FONT_LOCATION=/usr/X11/lib/X11/fonts/mathfonts
 
 
@@ -34,7 +34,15 @@ if [ $(uname) == 'Linux' ]	#if Linux detected
 		#bash -c "echo 'xset fp+ $LINUX_FONT_LOCATION/Fonts/Type1' >> ~/.bashrc"
 		#bash -c "echo 'xset fp+ $LINUX_FONT_LOCATION/Fonts/BDF' >> ~/.bashrc"
 		#bash -c "echo 'xset fp rehash' >> ~/.bashrc"
+		
 
+		# Add to system font registry
+
+		/usr/sbin/chkfontpath --remove=''
+		/usr/sbin/chkfontpath --add="$LINUX_FONT_LOCATION/Fonts/Type1"
+		/usr/sbin/chkfontpath --add="$LINUX_FONT_LOCATION/Fonts/BDF"
+		/etc/init.d/xfs restart
+		fc-cache /usr/share/fonts
 		#Clean up
 		cd $LINUX_FONT_LOCATION
 		rm MathematicaV7FontsLinux.tar.gz
