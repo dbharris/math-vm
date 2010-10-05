@@ -38,11 +38,6 @@ if [ $(uname) == 'Linux' ]	#if Linux detected
 
 		# Add to system font registry
 
-		/usr/sbin/chkfontpath --remove=''
-		/usr/sbin/chkfontpath --add="$LINUX_FONT_LOCATION/Fonts/Type1"
-		/usr/sbin/chkfontpath --add="$LINUX_FONT_LOCATION/Fonts/BDF"
-		/etc/init.d/xfs restart
-		fc-cache /usr/share/fonts
 		#Clean up
 		cd $LINUX_FONT_LOCATION
 		rm MathematicaV7FontsLinux.tar.gz
