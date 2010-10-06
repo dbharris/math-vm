@@ -328,7 +328,7 @@ if [ -f ~/.nimbus/cloud.properties ]; then
 else
 	cp cloud.properties ~/.nimbus/cloud.properties
 fi
-echo "Virtual machine bootstrap procedure complete.  You can now run your new VM with "cloud-client.sh --run --name --vm-name --hours number of hours"
+echo "Virtual machine bootstrap procedure complete.  You can now run your new VM with cloud-client.sh --run --name --vm-name --hours number of hours"
 
 
 
