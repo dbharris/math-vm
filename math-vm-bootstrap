@@ -75,8 +75,8 @@ done
 stty echo
 
 echo "Generating RSA key..."
-ssh-keygen -N "" -f $INSTALL_DIR/id_rsa 
-
+ssh-keygen -N "" -f $INSTALL_DIR/id_rsa &> /dev/null 
+echo "Done."
 
 
 CREDENTIALS="###########################################################################
@@ -172,21 +172,21 @@ fi
 
 # Download the stock image
 echo "Downloading template image..."
-wget http://vmrepo.heprc.uvic.ca/Mathematica-VM.img.gz
+wget http://vmrepo.heprc.uvic.ca/Mathematica-VM.img.gz &> /dev/null
 echo "Done."
 
 # Load the image into the user's personal repository in Cumulus
 echo "Transferring image to Cumulus..."
-$CLOUD_CLIENT/bin/cloud-client.sh --conf ./cloud.properties --transfer --sourcefile ./Mathematica-VM.img.gz
+$CLOUD_CLIENT/bin/cloud-client.sh --conf ./cloud.properties --transfer --sourcefile ./Mathematica-VM.img.gz > /dev/null
 
 echo "Done."
 
 
 # Launch vm.
 echo "Launching VM..."
-$CLOUD_CLIENT/bin/cloud-client.sh --conf ./cloud.properties --run --name Mathematica-VM.img.gz --hours 1 2>&1 | tee runlog.txt
-
-
+#$CLOUD_CLIENT/bin/cloud-client.sh --conf ./cloud.properties --run --name Mathematica-VM.img.gz --hours 1 2>&1 | tee runlog.txt
+$CLOUD_CLIENT/bin/cloud-client.sh --conf ./cloud.properties --run --name Mathematica-VM.img.gz --hours 1 >> runlog.txt
+echo "Done."
 # Parse output of cloud-client to grab the IP address
 IP_ADDRESS=$(cat runlog.txt  | grep IP | awk '{print $3}')
 HANDLE=$(cat runlog.txt  | grep Running: | sed s/"'"/" "/g | awk '{print $2}')
@@ -195,9 +195,9 @@ HANDLE=$(cat runlog.txt  | grep Running: | sed s/"'"/" "/g | awk '{print $2}')
 i="0"
 # if there's an error, $? will be nonzero
 while [ $i -lt 30 ]; do
-	ssh -i $INSTALL_DIR/id_rsa -o StrictHostKeyChecking=no root@$IP_ADDRESS
- 	echo "SSH appears functional."
+	ssh -i $INSTALL_DIR/id_rsa -o StrictHostKeyChecking=no root@$IP_ADDRESS echo "SSH appears functional." &> /dev/null
 	if [ $? == "0" ]; then
+		echo "SSH appears functional."
 		break
 	else
 		sleep 10
@@ -208,20 +208,20 @@ done
 
 
 echo "Adding $REMOTE_USER..."
-ssh -i $INSTALL_DIR/id_rsa -o StrictHostKeyChecking=no root@$IP_ADDRESS /usr/sbin/adduser $REMOTE_USER
-ssh -i $INSTALL_DIR/id_rsa -o StrictHostKeyChecking=no root@$IP_ADDRESS passwd $REMOTE_USER<<EOF 
+ssh -i $INSTALL_DIR/id_rsa -o StrictHostKeyChecking=no root@$IP_ADDRESS /usr/sbin/adduser $REMOTE_USER > /dev/null
+ssh -i $INSTALL_DIR/id_rsa -o StrictHostKeyChecking=no root@$IP_ADDRESS $REMOTE_USER &> /dev/null <<EOF 
 $USER_PASSWORD
 $USER_PASSWORD
 EOF
 echo "Adding $REMOTE_USER to the sudoers file..."
-ssh -i $INSTALL_DIR/id_rsa -o StrictHostKeyChecking=no root@$IP_ADDRESS 'echo "# Adding remote sudo access" >> /etc/sudoers'
-ssh -i $INSTALL_DIR/id_rsa -o StrictHostKeyChecking=no root@$IP_ADDRESS 'cp /etc/sudoers /etc/sudoers.bak'
-ssh -i $INSTALL_DIR/id_rsa -o StrictHostKeyChecking=no root@$IP_ADDRESS "echo '$REMOTE_USER        ALL=(ALL)       ALL' >> /etc/sudoers"
+ssh -i $INSTALL_DIR/id_rsa -o StrictHostKeyChecking=no root@$IP_ADDRESS 'echo "# Adding remote sudo access" >> /etc/sudoers' > /dev/null
+ssh -i $INSTALL_DIR/id_rsa -o StrictHostKeyChecking=no root@$IP_ADDRESS 'cp /etc/sudoers /etc/sudoers.bak' > /dev/null
+ssh -i $INSTALL_DIR/id_rsa -o StrictHostKeyChecking=no root@$IP_ADDRESS "echo '$REMOTE_USER        ALL=(ALL)       ALL' >> /etc/sudoers" > /dev/null
 echo "Done."
 
 # Shutdown-save the virtual machine
 echo "Saving VM..."
-$CLOUD_CLIENT/bin/cloud-client.sh --conf ./cloud.properties --save --handle $HANDLE
+$CLOUD_CLIENT/bin/cloud-client.sh --conf ./cloud.properties --save --handle $HANDLE &> /dev/null
 
 echo "Done."
 
@@ -328,7 +328,7 @@ if [ -f ~/.nimbus/cloud.properties ]; then
 else
 	cp cloud.properties ~/.nimbus/cloud.properties
 fi
-
+echo "Virtual machine bootstrap procedure complete.  You can now run your new VM with "cloud-client.sh --run --name --vm-name --hours number of hours"
 
 
 
