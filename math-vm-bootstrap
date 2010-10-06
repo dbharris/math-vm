@@ -209,7 +209,7 @@ done
 
 echo "Adding $REMOTE_USER..."
 ssh -i $INSTALL_DIR/id_rsa -o StrictHostKeyChecking=no root@$IP_ADDRESS /usr/sbin/adduser $REMOTE_USER > /dev/null
-ssh -i $INSTALL_DIR/id_rsa -o StrictHostKeyChecking=no root@$IP_ADDRESS $REMOTE_USER &> /dev/null <<EOF 
+ssh -i $INSTALL_DIR/id_rsa -o StrictHostKeyChecking=no root@$IP_ADDRESS $REMOTE_USER <<EOF 
 $USER_PASSWORD
 $USER_PASSWORD
 EOF
