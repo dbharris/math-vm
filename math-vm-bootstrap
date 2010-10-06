@@ -208,15 +208,15 @@ done
 
 
 echo "Adding $REMOTE_USER..."
-ssh -i $INSTALL_DIR/id_rsa -o StrictHostKeyChecking=no root@$IP_ADDRESS /usr/sbin/adduser $REMOTE_USER > /dev/null
-ssh -i $INSTALL_DIR/id_rsa -o StrictHostKeyChecking=no root@$IP_ADDRESS $REMOTE_USER <<EOF 
+ssh -i $INSTALL_DIR/id_rsa -o StrictHostKeyChecking=no root@$IP_ADDRESS /usr/sbin/adduser $REMOTE_USER
+ssh -i $INSTALL_DIR/id_rsa -o StrictHostKeyChecking=no root@$IP_ADDRESS passwd $REMOTE_USER <<EOF 
 $USER_PASSWORD
 $USER_PASSWORD
 EOF
 echo "Adding $REMOTE_USER to the sudoers file..."
-ssh -i $INSTALL_DIR/id_rsa -o StrictHostKeyChecking=no root@$IP_ADDRESS 'echo "# Adding remote sudo access" >> /etc/sudoers' > /dev/null
-ssh -i $INSTALL_DIR/id_rsa -o StrictHostKeyChecking=no root@$IP_ADDRESS 'cp /etc/sudoers /etc/sudoers.bak' > /dev/null
-ssh -i $INSTALL_DIR/id_rsa -o StrictHostKeyChecking=no root@$IP_ADDRESS "echo '$REMOTE_USER        ALL=(ALL)       ALL' >> /etc/sudoers" > /dev/null
+ssh -i $INSTALL_DIR/id_rsa -o StrictHostKeyChecking=no root@$IP_ADDRESS 'echo "# Adding remote sudo access" >> /etc/sudoers'
+ssh -i $INSTALL_DIR/id_rsa -o StrictHostKeyChecking=no root@$IP_ADDRESS 'cp /etc/sudoers /etc/sudoers.bak'
+ssh -i $INSTALL_DIR/id_rsa -o StrictHostKeyChecking=no root@$IP_ADDRESS "echo '$REMOTE_USER        ALL=(ALL)       ALL' >> /etc/sudoers"
 echo "Done."
 
 # Shutdown-save the virtual machine
